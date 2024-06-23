@@ -1,26 +1,64 @@
-import { Matrix } from './matrix'
+import * as mat from './matrix'
 
 export class Canvas {
-  private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
   private dirty = true
+  private matrix = mat.IDENTITY
+  private width = 0
+  private height = 0
 
-  constructor(canvas: HTMLCanvasElement) {
-    this.canvas = canvas
+  constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!
 
+    const rect = this.canvas.getBoundingClientRect()
+    const dpr = window.devicePixelRatio
+    this.width = rect.width
+    this.height = rect.height
+    this.canvas.width = rect.width * dpr
+    this.canvas.height = rect.height * dpr
+
     this.initBindings()
+    this.reset()
     this.renderLoop()
   }
 
-  private initBindings() {
-    const onResize = () => {
-      this.canvas.width = window.innerWidth
-      this.canvas.height = window.innerHeight
-    }
+  public updateMatrix(matrix: mat.Matrix) {
+    this.dirty = true
+    this.matrix = matrix
+  }
 
-    window.addEventListener('resize', onResize)
-    onResize()
+  private initBindings() {
+    const observer = new ResizeObserver(
+      (entries: { target: Element; contentRect: DOMRectReadOnly }[]) => {
+        const dpr = window.devicePixelRatio
+        for (const entry of entries) {
+          if (entry.target === this.canvas) {
+            const { width, height } = entry.contentRect
+            this.canvas.width = width * dpr
+            this.canvas.height = height * dpr
+
+            this.width = width
+            this.height = height
+
+            this.dirty = true
+            break
+          }
+        }
+      }
+    )
+
+    observer.observe(this.canvas)
+  }
+
+  private reset() {
+    this.ctx.reset()
+    this.resetTransform()
+  }
+
+  private resetTransform() {
+    const dpr = window.devicePixelRatio
+    this.ctx.resetTransform()
+    this.ctx.scale(dpr, dpr)
   }
 
   private renderLoop() {
@@ -33,85 +71,109 @@ export class Canvas {
       requestAnimationFrame(loop)
     }
 
-    loop(lastTime + 1)
+    requestAnimationFrame(loop)
   }
 
-  private render(time: number, delta: number) {
+  private render(_time: number, _delta: number) {
     if (!this.dirty) return
+    this.dirty = false
 
-    this.clear()
+    this.reset()
 
     const ctx = this.ctx
-    ctx.reset()
-    const { width, height } = this.canvas
-    Matrix.withTranslation(width / 2, height / 2).apply(ctx)
+
+    const { width, height } = this
+    mat.apply(mat.translate(width / 2, height / 2), ctx)
+    mat.apply(this.matrix, ctx)
+
+    this.drawGrid()
 
     ctx.save()
-    Matrix.withRotation(((time / 50) * Math.PI) / 180).apply(ctx)
+    ctx.beginPath()
+    ctx.rect(0, 0, 100, 100)
+    ctx.fillStyle = 'red'
+    ctx.strokeStyle = 'blue'
+    ctx.fill()
+    ctx.stroke()
+    ctx.restore()
 
+    this.drawCircle(0, 0, 5, 'rgb(69, 133, 136)')
+  }
+
+  private drawGrid() {
+    const ctx = this.ctx
+    const { width, height } = this
+
+    ctx.save()
     ctx.beginPath()
 
-    let d = -width
-    while (d < width) {
+    // TODO: get a viewport rect in canvas space and draw lines out to it
+    // instead of using width & height
+
+    // Draw vertical grid lines
+
+    for (let d = 0; d < width; d += 100) {
       ctx.moveTo(d, -height)
       ctx.lineTo(d, height)
-      d += 10
     }
 
-    // ctx.resetTransform()
+    for (let d = -100; d > -width; d -= 100) {
+      ctx.moveTo(d, -height)
+      ctx.lineTo(d, height)
+    }
 
-    this.ctx.strokeStyle = '#141414'
+    // Draw horizontal grid lines
+
+    for (let d = 0; d < height; d += 100) {
+      ctx.moveTo(-width, d)
+      ctx.lineTo(width, d)
+    }
+
+    for (let d = -100; d > -height; d -= 100) {
+      ctx.moveTo(-width, d)
+      ctx.lineTo(width, d)
+    }
+
+    this.resetTransform()
+    ctx.strokeStyle = '#444'
+    ctx.lineWidth = 0.5
     this.ctx.stroke()
+    ctx.restore()
 
+    ctx.save()
     ctx.beginPath()
     ctx.moveTo(-width, 0)
     ctx.lineTo(width, 0)
     ctx.moveTo(0, -height)
     ctx.lineTo(0, height)
+
+    this.resetTransform()
+    ctx.strokeStyle = '#444'
     ctx.lineWidth = 2
-    ctx.strokeStyle = 'black'
     ctx.stroke()
     ctx.restore()
-
-    this.drawCircle(0, 0, 5, 'red')
-
-    this.dirty = true
   }
 
-  public clear() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-  }
+  private drawCircle(x: number, y: number, radius: number, color: string) {
+    const ctx = this.ctx
 
-  public drawRect(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    color: string,
-  ) {
-    this.ctx.fillStyle = color
-    this.ctx.fillRect(x, y, width, height)
-  }
+    ctx.save()
 
-  public drawCircle(x: number, y: number, radius: number, color: string) {
-    this.ctx.save()
-    this.ctx.strokeStyle = color
-    this.ctx.lineWidth = 2
-    this.ctx.beginPath()
-    this.ctx.arc(x, y, radius, 0, 2 * Math.PI)
-    this.ctx.stroke()
-    this.ctx.restore()
-  }
+    // We reset the transform but then use the old transform to calculate the
+    // offset. This lets us draw a perfect circle at the given x, y position
+    // without any distortion.
 
-  public drawText(
-    text: string,
-    x: number,
-    y: number,
-    color: string,
-    fontSize: number = 20,
-  ) {
-    this.ctx.font = `${fontSize}px Arial`
-    this.ctx.fillStyle = color
-    this.ctx.fillText(text, x, y)
+    const tOld = ctx.getTransform()
+    this.resetTransform()
+    const tNew = ctx.getTransform()
+
+    const offsetX = tOld.e / tNew.a
+    const offsetY = tOld.f / tNew.d
+
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x + offsetX, y + offsetY, radius, 0, 2 * Math.PI)
+    ctx.fill()
+    ctx.restore()
   }
 }

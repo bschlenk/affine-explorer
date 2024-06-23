@@ -1,0 +1,28 @@
+.canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.controls {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+
+  display: flex;
+  gap: 20px;
+}
+
+.matrix {
+  display: grid;
+  gap: 8px;
+  grid-auto-flow: column;
+  grid-template-rows: 32px 32px;
+  grid-template-columns: 1fr 1fr 1fr;
+  width: 228px;
+}
+
+.matrixInput {
+  height: 100%;
+  width: 100%;
+}

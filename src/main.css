@@ -14,6 +14,19 @@
   -webkit-text-size-adjust: 100%;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
+@supports (height: 100dvh) {
+  #root {
+    width: 100dvw;
+    height: 100dvh;
+  }
+}
+
 a {
   font-weight: 500;
   color: #646cff;
