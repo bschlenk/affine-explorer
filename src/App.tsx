@@ -52,7 +52,7 @@ function Display({ matrix }: { matrix: mat.Matrix }) {
   }, [])
 
   useEffect(() => {
-    if (canvasRef.current) {
+    if (canvasRef.current && mat.isValid(matrix)) {
       canvasRef.current.updateMatrix(matrix)
     }
   }, [matrix])

@@ -139,6 +139,10 @@ export function apply(m: Matrix, ctx: CanvasRenderingContext2D) {
   ctx.transform(m.xx, m.xy, m.yx, m.yy, m.dx, m.dy)
 }
 
+export function isValid(m: Matrix) {
+  return Object.values(m).every((v) => !Number.isNaN(v) && Number.isFinite(v))
+}
+
 function mult2(a: Matrix, b: Matrix): Matrix {
   return mat(
     a.xx * b.xx + a.xy * b.yx,
