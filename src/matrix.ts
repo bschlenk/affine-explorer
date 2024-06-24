@@ -92,16 +92,16 @@ export function invert(m: Matrix) {
   )
 }
 
-export function transformPoint(v: Vector, m: Matrix) {
+export function transformPoint(m: Matrix, v: Vector) {
   return {
     x: m.xx * v.x + m.yx * v.y + m.dx,
     y: m.xy * v.x + m.yy * v.y + m.dy,
   }
 }
 
-export function inverseTransformPoint(v: Vector, m: Matrix) {
+export function inverseTransformPoint(m: Matrix, v: Vector) {
   const mi = invert(m)
-  return mi ? transformPoint(v, mi) : null
+  return mi ? transformPoint(mi, v) : null
 }
 
 export function equals(a: Matrix, b: Matrix) {

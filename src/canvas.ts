@@ -92,7 +92,7 @@ export class Canvas {
     mat.apply(mat.translate(width / 2, height / 2), ctx)
 
     if (!mat.isIdentity(this.matrix.value)) {
-      this.drawGhostGrid()
+      this.drawGhostOrigin()
     }
 
     mat.apply(this.matrix.value, ctx)
@@ -111,7 +111,7 @@ export class Canvas {
     this.drawCircle(0, 0, 5, 'rgb(69, 133, 136)')
   }
 
-  private drawGhostGrid() {
+  private drawGhostOrigin() {
     const ctx = this.ctx
     const { width, height } = this
 
@@ -133,34 +133,49 @@ export class Canvas {
     const ctx = this.ctx
     const { width, height } = this
 
+    let left = -width / 2
+    let right = width / 2
+    let top = -height / 2
+    let bottom = height / 2
+
+    const mi = mat.invert(this.matrix.value)
+    if (!mi) return
+
+    const tl = mat.transformPoint(mi, { x: left, y: top })
+    const tr = mat.transformPoint(mi, { x: right, y: top })
+    const br = mat.transformPoint(mi, { x: right, y: bottom })
+    const bl = mat.transformPoint(mi, { x: left, y: bottom })
+
+    left = Math.min(tl.x, tr.x, br.x, bl.x)
+    right = Math.max(tl.x, tr.x, br.x, bl.x)
+    top = Math.min(tl.y, tr.y, br.y, bl.y)
+    bottom = Math.max(tl.y, tr.y, br.y, bl.y)
+
     ctx.save()
     ctx.beginPath()
 
-    // TODO: get a viewport rect in canvas space and draw lines out to it
-    // instead of using width & height
-
     // Draw vertical grid lines
 
-    for (let d = 0; d < width; d += 100) {
-      ctx.moveTo(d, -height)
-      ctx.lineTo(d, height)
+    for (let d = 0; d < right; d += 100) {
+      ctx.moveTo(d, top)
+      ctx.lineTo(d, bottom)
     }
 
-    for (let d = -100; d > -width; d -= 100) {
-      ctx.moveTo(d, -height)
-      ctx.lineTo(d, height)
+    for (let d = -100; d > left; d -= 100) {
+      ctx.moveTo(d, top)
+      ctx.lineTo(d, bottom)
     }
 
     // Draw horizontal grid lines
 
-    for (let d = 0; d < height; d += 100) {
-      ctx.moveTo(-width, d)
-      ctx.lineTo(width, d)
+    for (let d = 0; d < bottom; d += 100) {
+      ctx.moveTo(left, d)
+      ctx.lineTo(right, d)
     }
 
-    for (let d = -100; d > -height; d -= 100) {
-      ctx.moveTo(-width, d)
-      ctx.lineTo(width, d)
+    for (let d = -100; d > top; d -= 100) {
+      ctx.moveTo(left, d)
+      ctx.lineTo(right, d)
     }
 
     this.resetTransform()
@@ -171,10 +186,10 @@ export class Canvas {
 
     ctx.save()
     ctx.beginPath()
-    ctx.moveTo(-width, 0)
-    ctx.lineTo(width, 0)
-    ctx.moveTo(0, -height)
-    ctx.lineTo(0, height)
+    ctx.moveTo(left, 0)
+    ctx.lineTo(right, 0)
+    ctx.moveTo(0, top)
+    ctx.lineTo(0, bottom)
 
     this.resetTransform()
     ctx.strokeStyle = '#444'
