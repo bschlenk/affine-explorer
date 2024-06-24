@@ -90,6 +90,11 @@ export class Canvas {
 
     const { width, height } = this
     mat.apply(mat.translate(width / 2, height / 2), ctx)
+
+    if (!mat.isIdentity(this.matrix.value)) {
+      this.drawGhostGrid()
+    }
+
     mat.apply(this.matrix.value, ctx)
 
     this.drawGrid()
@@ -104,6 +109,24 @@ export class Canvas {
     ctx.restore()
 
     this.drawCircle(0, 0, 5, 'rgb(69, 133, 136)')
+  }
+
+  private drawGhostGrid() {
+    const ctx = this.ctx
+    const { width, height } = this
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.moveTo(-width, 0)
+    ctx.lineTo(width, 0)
+    ctx.moveTo(0, -height)
+    ctx.lineTo(0, height)
+
+    ctx.strokeStyle = '#444'
+    ctx.lineWidth = 1
+    ctx.setLineDash([5, 5])
+    ctx.stroke()
+    ctx.restore()
   }
 
   private drawGrid() {
