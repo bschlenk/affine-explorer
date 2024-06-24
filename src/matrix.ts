@@ -51,6 +51,10 @@ export function rotateAt(angle: number, cx: number, cy: number): Matrix {
   return transformFrom(rotate(angle), cx, cy)
 }
 
+export function getRotation(m: Matrix) {
+  return Math.atan2(m.xy, m.xx)
+}
+
 export function scale(x: number, y = x): Matrix {
   return mat(x, 0, 0, y, 0, 0)
 }

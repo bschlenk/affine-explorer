@@ -102,18 +102,35 @@ function MatrixControl({
     [matrix, setMatrix]
   )
 
+  const rot = mat.getRotation(matrix)
+  const rotDeg = (rot * 180) / Math.PI
+
   return (
     <div className={styles.matrix}>
-      {(Object.keys(matrix) as mat.MatrixElement[]).map((key) => (
+      <div className={styles.matrixValues}>
+        {(Object.keys(matrix) as mat.MatrixElement[]).map((key) => (
+          <input
+            key={key}
+            className={styles.matrixInput}
+            type="number"
+            name={key}
+            value={matrix[key]}
+            onChange={onChange}
+          />
+        ))}
+      </div>
+      <div className={styles.matrixAux}>
         <input
-          key={key}
-          className={styles.matrixInput}
           type="number"
-          name={key}
-          value={matrix[key]}
-          onChange={onChange}
+          value={rotDeg}
+          onChange={(e) => {
+            const rotDeg = parseFloat(e.target.value)
+            const newRot = (rotDeg * Math.PI) / 180
+
+            setMatrix(mat.mult(matrix, mat.rotate(newRot - rot)))
+          }}
         />
-      ))}
+      </div>
     </div>
   )
 }
