@@ -1,3 +1,5 @@
+import { areClose } from './util'
+
 interface Vector {
   x: number
   y: number
@@ -150,8 +152,4 @@ function mult2(a: Matrix, b: Matrix): Matrix {
 
 function transformFrom(m: Matrix, centerX: number, centerY: number): Matrix {
   return mult(translate(centerX, centerY), m, translate(-centerX, -centerY))
-}
-
-function areClose(a: number, b: number, epsilon = Number.EPSILON) {
-  return Math.abs(a - b) < epsilon
 }

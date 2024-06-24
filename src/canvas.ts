@@ -1,9 +1,12 @@
 import * as mat from './matrix'
+import { createSpring } from './spring'
+
+const spring = createSpring({ stiffness: 170, damping: 26 })
 
 export class Canvas {
   private ctx: CanvasRenderingContext2D
   private dirty = true
-  private matrix = mat.IDENTITY
+  private matrix = spring(mat.IDENTITY)
   private width = 0
   private height = 0
 
@@ -24,7 +27,7 @@ export class Canvas {
 
   public updateMatrix(matrix: mat.Matrix) {
     this.dirty = true
-    this.matrix = matrix
+    this.matrix.set(matrix)
   }
 
   private initBindings() {
@@ -74,9 +77,12 @@ export class Canvas {
     requestAnimationFrame(loop)
   }
 
-  private render(_time: number, _delta: number) {
+  private render(_time: number, delta: number) {
     if (!this.dirty) return
-    this.dirty = false
+
+    if (!this.matrix.update(delta)) {
+      this.dirty = false
+    }
 
     this.reset()
 
@@ -84,7 +90,7 @@ export class Canvas {
 
     const { width, height } = this
     mat.apply(mat.translate(width / 2, height / 2), ctx)
-    mat.apply(this.matrix, ctx)
+    mat.apply(this.matrix.value, ctx)
 
     this.drawGrid()
 
