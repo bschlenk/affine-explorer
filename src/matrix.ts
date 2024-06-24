@@ -37,6 +37,10 @@ export function mat(
   return { xx, xy, yx, yy, dx, dy }
 }
 
+export function fromDomMatrix(m: DOMMatrixReadOnly): Matrix {
+  return mat(m.a, m.b, m.c, m.d, m.e, m.f)
+}
+
 export function translate(x: number, y: number): Matrix {
   return mat(1, 0, 0, 1, x, y)
 }
