@@ -1,8 +1,10 @@
 import { Canvas } from './canvas'
 import { useCallback, useEffect, useReducer, useRef } from 'react'
-import * as mat from './matrix'
+import * as mat from '@bschlenk/mat'
 
 import styles from './app.module.css'
+
+type MatrixElement = keyof mat.Matrix
 
 interface ActionUpdate {
   type: 'update'
@@ -95,7 +97,7 @@ function MatrixControl({
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value)
-      const name = e.target.name as mat.MatrixElement
+      const name = e.target.name as MatrixElement
 
       setMatrix({ ...matrix, [name]: value })
     },
@@ -108,7 +110,7 @@ function MatrixControl({
   return (
     <div className={styles.matrix}>
       <div className={styles.matrixValues}>
-        {(Object.keys(matrix) as mat.MatrixElement[]).map((key) => (
+        {(Object.keys(matrix) as MatrixElement[]).map((key) => (
           <input
             key={key}
             className={styles.matrixInput}

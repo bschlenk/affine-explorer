@@ -1,4 +1,4 @@
-import * as mat from './matrix'
+import * as mat from '@bschlenk/mat'
 import { createSpring } from './spring'
 
 const spring = createSpring({ stiffness: 170, damping: 26 })
@@ -89,13 +89,13 @@ export class Canvas {
     const ctx = this.ctx
 
     const { width, height } = this
-    mat.apply(mat.translate(width / 2, height / 2), ctx)
+    mat.toCanvas(mat.translate(width / 2, height / 2), ctx)
 
     if (!mat.isIdentity(this.matrix.value)) {
       this.drawGhostOrigin()
     }
 
-    mat.apply(this.matrix.value, ctx)
+    mat.toCanvas(this.matrix.value, ctx)
 
     this.drawGrid()
 
