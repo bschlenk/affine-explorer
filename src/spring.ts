@@ -1,4 +1,4 @@
-import { areClose } from './util'
+import { areClose } from '@bschlenk/util'
 
 export interface SpringOptions {
   stiffness?: number
