@@ -101,25 +101,34 @@ function MatrixControls({
 }) {
   return (
     <div className={styles.controls}>
-      {matrices.map((matrix, i) => (
-        <Matrix
-          key={i}
-          matrix={matrix}
-          setMatrix={(matrix) => {
-            if (matrix) {
-              dispatch({ type: 'update', index: i, value: matrix })
-            } else {
-              dispatch({ type: 'delete', index: i })
-            }
-          }}
-          moveMatrix={(dir) => {
-            dispatch({ type: 'move', index: i, dir })
-          }}
-        />
-      ))}
-      <button onClick={() => dispatch({ type: 'insert', value: mat.IDENTITY })}>
-        Add Matrix
-      </button>
+      <div className={styles.section}>
+        {matrices.map((matrix, i) => (
+          <Matrix
+            key={i}
+            matrix={matrix}
+            setMatrix={(matrix) => {
+              if (matrix) {
+                dispatch({ type: 'update', index: i, value: matrix })
+              } else {
+                dispatch({ type: 'delete', index: i })
+              }
+            }}
+            moveMatrix={(dir) => {
+              dispatch({ type: 'move', index: i, dir })
+            }}
+          />
+        ))}
+        <button
+          className={styles.button}
+          onClick={() => dispatch({ type: 'insert', value: mat.IDENTITY })}
+        >
+          +
+        </button>
+      </div>
+      <div className={styles.section}>
+        <div className={styles.equals}>=</div>
+        <Matrix readonly matrix={mat.mult(...matrices)} />
+      </div>
     </div>
   )
 }

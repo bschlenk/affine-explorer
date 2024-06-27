@@ -10,17 +10,23 @@ type MatrixElement = keyof mat.Matrix
 
 export interface MatrixProps {
   matrix: mat.Matrix
-  setMatrix: (matrix: mat.Matrix | null) => void
-  moveMatrix: (dir: 1 | -1) => void
+  readonly?: boolean
+  setMatrix?: (matrix: mat.Matrix | null) => void
+  moveMatrix?: (dir: 1 | -1) => void
 }
 
-export function Matrix({ matrix, setMatrix, moveMatrix }: MatrixProps) {
+export function Matrix({
+  matrix,
+  readonly,
+  setMatrix,
+  moveMatrix,
+}: MatrixProps) {
   const onChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = parseFloat(e.target.value)
       const name = e.target.name as MatrixElement
 
-      setMatrix({ ...matrix, [name]: value })
+      setMatrix?.({ ...matrix, [name]: value })
     },
     [matrix, setMatrix]
   )
@@ -39,6 +45,7 @@ export function Matrix({ matrix, setMatrix, moveMatrix }: MatrixProps) {
             type="number"
             name={key}
             value={matrix[key]}
+            readOnly={readonly}
             onChange={onChange}
           />
         ))}
@@ -50,11 +57,12 @@ export function Matrix({ matrix, setMatrix, moveMatrix }: MatrixProps) {
             className={styles.input}
             type="number"
             value={rotDeg}
+            readOnly={readonly}
             onChange={(e) => {
               const rotDeg = parseFloat(e.target.value)
               const newRot = (rotDeg * Math.PI) / 180
 
-              setMatrix(mat.mult(matrix, mat.rotate(newRot - rot)))
+              setMatrix?.(mat.mult(matrix, mat.rotate(newRot - rot)))
             }}
           />
         </div>
@@ -65,6 +73,7 @@ export function Matrix({ matrix, setMatrix, moveMatrix }: MatrixProps) {
             type="number"
             step="0.1"
             value={scale}
+            readOnly={readonly}
             onChange={(e) => {
               const scale = parseFloat(e.target.value)
               let m = mat.mult(
@@ -76,23 +85,25 @@ export function Matrix({ matrix, setMatrix, moveMatrix }: MatrixProps) {
                 m = mat.scale(scale)
               }
 
-              setMatrix(m)
+              setMatrix?.(m)
             }}
           />
         </div>
       </div>
       <div className={styles.footer}></div>
-      <div className={styles.above}>
-        <button className={styles.button} onClick={() => moveMatrix(-1)}>
-          ←
-        </button>
-        <button className={styles.button} onClick={() => moveMatrix(1)}>
-          →
-        </button>
-        <button className={styles.button} onClick={() => setMatrix(null)}>
-          ✕
-        </button>
-      </div>
+      {!readonly && (
+        <div className={styles.above}>
+          <button className={styles.button} onClick={() => moveMatrix?.(-1)}>
+            ←
+          </button>
+          <button className={styles.button} onClick={() => moveMatrix?.(1)}>
+            →
+          </button>
+          <button className={styles.button} onClick={() => setMatrix?.(null)}>
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }

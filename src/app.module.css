@@ -5,14 +5,33 @@
 
 .controls {
   position: fixed;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
 
   display: flex;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 29px;
+  align-items: center;
+  justify-content: space-between;
+}
 
-  background: #2c2c2c;
+.section {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.button {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1000px;
+  background: #1e1e1e;
+}
+
+.equals {
+  composes: button;
+  user-select: none;
+  -webkit-user-select: none;
 }
