@@ -1,10 +1,11 @@
-import * as mat from '@bschlenk/mat'
 import { useCallback } from 'react'
-
-import styles from './matrix.module.css'
+import * as mat from '@bschlenk/mat'
 import { RAD2DEG } from '@bschlenk/util'
+
 import { IconRotate } from './icon-rotate'
 import { IconScale } from './icon-scale'
+
+import styles from './matrix.module.css'
 
 type MatrixElement = keyof mat.Matrix
 

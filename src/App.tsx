@@ -1,9 +1,10 @@
-import { Canvas } from './canvas'
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import * as mat from '@bschlenk/mat'
 
-import styles from './app.module.css'
+import { Canvas } from './canvas'
 import { Matrix } from './components/matrix'
+
+import styles from './app.module.css'
 
 interface ActionUpdate {
   type: 'update'
