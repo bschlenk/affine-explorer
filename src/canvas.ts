@@ -102,8 +102,9 @@ export class Canvas {
     ctx.save()
     ctx.beginPath()
     ctx.rect(0, 0, 100, 100)
-    ctx.fillStyle = 'red'
-    ctx.strokeStyle = 'blue'
+    this.resetTransform()
+    ctx.fillStyle = '#2c2c2c'
+    ctx.strokeStyle = '#fff'
     ctx.fill()
     ctx.stroke()
     ctx.restore()

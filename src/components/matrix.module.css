@@ -1,0 +1,99 @@
+.root {
+  position: relative;
+  width: 240px;
+  background: #1e1e1e;
+  border-radius: 13px;
+  padding: 16px;
+  padding-bottom: 40px;
+  gap: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.values {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  grid-auto-flow: column;
+  grid-template-rows: 32px 32px;
+  grid-template-columns: 1fr 1fr 1fr;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    width: 17px;
+    border: 2px solid #fff;
+    border-width: 2px 0 2px 2px;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    bottom: -5px;
+    width: 17px;
+    border: 2px solid #fff;
+    border-width: 2px 2px 2px 0;
+  }
+}
+
+.aux {
+  display: flex;
+  gap: 8px;
+}
+
+.footer {
+}
+
+.input {
+  min-width: 0;
+  width: 100%;
+  height: 32px;
+  background: #383838;
+  border: none;
+  border-radius: 5px;
+  text-align: right;
+  padding: 4px;
+  padding-left: 2px;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    /* display: none; <- Crashes Chrome on hover */
+    -webkit-appearance: none;
+    margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+  }
+
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.inputWrapper {
+  position: relative;
+  min-width: 0;
+  --color-icon: #bfbfbf;
+
+  svg {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+.above {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  width: 26px;
+  height: 26px;
+  background: #1e1e1e;
+  padding: 0;
+  border-radius: 1000px;
+}
