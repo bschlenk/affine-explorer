@@ -67,23 +67,18 @@ function step(
   velocity: number,
   opts: Required<SpringOptions>
 ) {
-  /* Spring Length, set to 1 for simplicity */
-  const springLength = 0
-
   /* Spring stiffness, in kg / s^2 */
   const k = -opts.stiffness
 
   /* Damping constant, in kg / s */
   const d = -opts.damping
 
-  const Fspring = k * (displacement - springLength)
-  const Fdamping = d * velocity
+  const fSpring = k * displacement
+  const fDamping = d * velocity
 
-  const a = (Fspring + Fdamping) / opts.mass
+  const a = (fSpring + fDamping) / opts.mass
   velocity += a * delta
   displacement += velocity * delta
-
-  console.log(velocity)
 
   return [displacement, velocity]
 }
