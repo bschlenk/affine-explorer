@@ -1,9 +1,10 @@
 import { useCallback } from 'react'
 import * as mat from '@bschlenk/mat'
-import { RAD2DEG } from '@bschlenk/util'
+import { DEG2RAD, RAD2DEG } from '@bschlenk/util'
 
 import { IconRotate } from './icon-rotate'
 import { IconScale } from './icon-scale'
+import { NumberInput } from './input'
 
 import styles from './matrix.module.css'
 
@@ -23,10 +24,8 @@ export function Matrix({
   moveMatrix,
 }: MatrixProps) {
   const onChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseFloat(e.target.value)
+    (value: number, e: React.ChangeEvent<HTMLInputElement>) => {
       const name = e.target.name as MatrixElement
-
       setMatrix?.({ ...matrix, [name]: value })
     },
     [matrix, setMatrix]
@@ -40,10 +39,8 @@ export function Matrix({
     <div className={styles.root}>
       <div className={styles.values}>
         {(Object.keys(matrix) as MatrixElement[]).map((key) => (
-          <input
+          <NumberInput
             key={key}
-            className={styles.input}
-            type="number"
             name={key}
             value={matrix[key]}
             readOnly={readonly}
@@ -52,44 +49,33 @@ export function Matrix({
         ))}
       </div>
       <div className={styles.aux}>
-        <div className={styles.inputWrapper}>
-          <IconRotate />
-          <input
-            className={styles.input}
-            type="number"
-            value={rotDeg}
-            readOnly={readonly}
-            onChange={(e) => {
-              const rotDeg = parseFloat(e.target.value)
-              const newRot = (rotDeg * Math.PI) / 180
+        <NumberInput
+          value={rotDeg}
+          readOnly={readonly}
+          icon={<IconRotate />}
+          onChange={(value) => {
+            const newRot = value * DEG2RAD
+            setMatrix?.(mat.mult(matrix, mat.rotate(newRot - rot)))
+          }}
+        />
+        <NumberInput
+          step={0.1}
+          value={scale}
+          readOnly={readonly}
+          icon={<IconScale />}
+          onChange={(value) => {
+            let m = mat.mult(
+              matrix,
+              mat.scale(value / matrix.xx, value / matrix.yy)
+            )
 
-              setMatrix?.(mat.mult(matrix, mat.rotate(newRot - rot)))
-            }}
-          />
-        </div>
-        <div className={styles.inputWrapper}>
-          <IconScale />
-          <input
-            className={styles.input}
-            type="number"
-            step="0.1"
-            value={scale}
-            readOnly={readonly}
-            onChange={(e) => {
-              const scale = parseFloat(e.target.value)
-              let m = mat.mult(
-                matrix,
-                mat.scale(scale / matrix.xx, scale / matrix.yy)
-              )
+            if (!mat.isValid(m)) {
+              m = mat.scale(value)
+            }
 
-              if (!mat.isValid(m)) {
-                m = mat.scale(scale)
-              }
-
-              setMatrix?.(m)
-            }}
-          />
-        </div>
+            setMatrix?.(m)
+          }}
+        />
       </div>
       <div className={styles.footer}></div>
       {!readonly && (
