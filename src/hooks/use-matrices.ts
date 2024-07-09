@@ -19,31 +19,45 @@ interface ActionDelete {
 
 interface ActionMove {
   type: 'move'
-  index: number
-  dir: 1 | -1
+  from: number
+  to: number
 }
 
 type Action = ActionUpdate | ActionInsert | ActionDelete | ActionMove
 
 export type UseMatricesDispatch = React.Dispatch<Action>
 
+export interface MatrixWithId {
+  id: number
+  value: mat.Matrix
+}
+
 export function useMatrices() {
-  const [matrices, dispatch] = useReducer(reducer, null, () => [mat.IDENTITY])
-  const matrix = useMemo(() => mat.mult(...matrices), [matrices])
+  const [matrices, dispatch] = useReducer(reducer, [], () => [
+    { id: nextId++, value: mat.IDENTITY },
+  ])
+
+  const matrix = useMemo(
+    () => mat.mult(...matrices.map((m) => m.value)),
+    [matrices]
+  )
+
   return { matrices, matrix, dispatch }
 }
 
-function reducer(matrices: mat.Matrix[], action: Action): mat.Matrix[] {
+let nextId = 0
+
+function reducer(matrices: MatrixWithId[], action: Action): MatrixWithId[] {
   switch (action.type) {
     case 'update':
       return [
         ...matrices.slice(0, action.index),
-        mat.round(action.value),
+        { id: matrices[action.index].id, value: mat.round(action.value) },
         ...matrices.slice(action.index + 1),
       ]
 
     case 'insert':
-      return [...matrices, mat.round(action.value)]
+      return [...matrices, { id: nextId++, value: mat.round(action.value) }]
 
     case 'delete': {
       const newMatrices = [
@@ -51,17 +65,19 @@ function reducer(matrices: mat.Matrix[], action: Action): mat.Matrix[] {
         ...matrices.slice(action.index + 1),
       ]
 
-      return newMatrices.length > 0 ? newMatrices : [mat.IDENTITY]
+      return newMatrices.length > 0
+        ? newMatrices
+        : [{ id: nextId++, value: mat.IDENTITY }]
     }
 
     case 'move': {
-      const { index: i, dir } = action
-      if (i + dir < 0 || i + dir >= matrices.length) return matrices
+      const { from, to } = action
+      if (from === to || to < 0 || to >= matrices.length) return matrices
 
       const newMatrices = [...matrices]
-      const temp = newMatrices[i]
-      newMatrices[i] = newMatrices[i + dir]
-      newMatrices[i + dir] = temp
+      const temp = newMatrices[from]
+      newMatrices[from] = newMatrices[to]
+      newMatrices[to] = temp
       return newMatrices
     }
   }

@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as mat from '@bschlenk/mat'
 
 import { Canvas } from './canvas'
 import { Matrix } from './components/matrix'
-import { useMatrices, UseMatricesDispatch } from './hooks/use-matrices'
+import {
+  MatrixWithId,
+  useMatrices,
+  UseMatricesDispatch,
+} from './hooks/use-matrices'
+import { childIndex } from './lib/dom'
 
 import styles from './app.module.css'
 
@@ -36,28 +41,41 @@ function Display({ matrix }: { matrix: mat.Matrix }) {
 }
 
 interface MatrixControlsProps {
-  matrices: mat.Matrix[]
+  matrices: MatrixWithId[]
   matrix: mat.Matrix
   dispatch: UseMatricesDispatch
 }
 
 function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
+  const [dragging, setDragging] = useState<HTMLElement | null>(null)
+
   return (
     <div className={styles.controls}>
       <div className={styles.section}>
-        {matrices.map((matrix, i) => (
+        {matrices.map(({ id, value }, i) => (
           <Matrix
-            key={i}
-            matrix={matrix}
-            setMatrix={(matrix) => {
-              if (matrix) {
-                dispatch({ type: 'update', index: i, value: matrix })
+            key={id}
+            matrix={value}
+            setMatrix={(value) => {
+              if (value) {
+                dispatch({ type: 'update', index: i, value })
               } else {
                 dispatch({ type: 'delete', index: i })
               }
             }}
             moveMatrix={(dir) => {
-              dispatch({ type: 'move', index: i, dir })
+              dispatch({ type: 'move', from: i, to: i + dir })
+            }}
+            onDragStart={(e) => {
+              setDragging(e.target as HTMLElement)
+            }}
+            onDragEnter={(e) => {
+              if (e.target !== e.currentTarget) return
+
+              const from = childIndex(dragging!)
+              const to = childIndex(e.target as HTMLElement)
+
+              dispatch({ type: 'move', from: from, to: to })
             }}
           />
         ))}

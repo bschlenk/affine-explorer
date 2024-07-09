@@ -15,6 +15,8 @@ export interface MatrixProps {
   readonly?: boolean
   setMatrix?: (matrix: mat.Matrix | null) => void
   moveMatrix?: (dir: 1 | -1) => void
+  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void
+  onDragEnter?: (e: React.DragEvent<HTMLDivElement>) => void
 }
 
 export function Matrix({
@@ -22,6 +24,8 @@ export function Matrix({
   readonly,
   setMatrix,
   moveMatrix,
+  onDragStart,
+  onDragEnter,
 }: MatrixProps) {
   const onChange = useCallback(
     (value: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,7 +40,12 @@ export function Matrix({
   const scale = Math.sqrt(matrix.xx ** 2 + matrix.xy ** 2)
 
   return (
-    <div className={styles.root}>
+    <div
+      className={styles.root}
+      draggable
+      onDragStart={onDragStart}
+      onDragEnter={onDragEnter}
+    >
       <div className={styles.values}>
         {(Object.keys(matrix) as MatrixElement[]).map((key) => (
           <NumberInput
