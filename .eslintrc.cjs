@@ -10,6 +10,9 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh', 'simple-import-sort'],
   rules: {
+    // handled by prettier
+    'no-extra-semi': 'off',
+
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
 
