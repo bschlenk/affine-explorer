@@ -5,6 +5,7 @@ import {
   correctAngle,
   decomposeMatrixPolar,
 } from './lib/matrix-utils'
+import { observe } from './lib/observe'
 import { createSpring } from './lib/spring'
 import { renderSprite } from './lib/sprite/sprite'
 
@@ -13,6 +14,7 @@ const spring = createSpring({ stiffness: 170, damping: 26 })
 export class Canvas {
   private ctx: CanvasRenderingContext2D
   private dirty = true
+  private camera = mat.IDENTITY
   private matrix = spring.indirect(
     mat.IDENTITY,
     decomposeMatrixPolar as any,
@@ -36,6 +38,11 @@ export class Canvas {
     this.renderLoop()
   }
 
+  public updateCamera(camera: mat.Matrix) {
+    this.dirty = true
+    this.camera = camera
+  }
+
   public updateMatrix(matrix: mat.Matrix) {
     this.dirty = true
     this.matrix.set(matrix)
@@ -48,26 +55,18 @@ export class Canvas {
   }
 
   private initBindings() {
-    const observer = new ResizeObserver(
-      (entries: { target: Element; contentRect: DOMRectReadOnly }[]) => {
-        const dpr = window.devicePixelRatio
-        for (const entry of entries) {
-          if (entry.target === this.canvas) {
-            const { width, height } = entry.contentRect
-            this.canvas.width = width * dpr
-            this.canvas.height = height * dpr
+    const canvas = this.canvas
 
-            this.width = width
-            this.height = height
+    observe(canvas, ({ width, height }) => {
+      const dpr = window.devicePixelRatio
+      canvas.width = width * dpr
+      canvas.height = height * dpr
 
-            this.dirty = true
-            break
-          }
-        }
-      },
-    )
+      this.width = width
+      this.height = height
 
-    observer.observe(this.canvas)
+      this.dirty = true
+    })
   }
 
   private reset() {
@@ -118,7 +117,7 @@ export class Canvas {
 
   private render() {
     const ctx = this.ctx
-    ctx.translate(this.width / 2, this.height / 2)
+    mat.toCanvas(this.camera, ctx)
 
     // drag the origin before updating the matrix so it stays in screen space
     this.drawOrigin()
@@ -132,15 +131,19 @@ export class Canvas {
   }
 
   private drawOrigin() {
-    const ctx = this.ctx
-    const { width, height } = this
+    const { ctx, width, height } = this
+
+    const scale = ctx.getTransform().a
+    const { dx, dy } = this.camera
 
     ctx.save()
     ctx.beginPath()
-    ctx.moveTo(-width, 0)
-    ctx.lineTo(width, 0)
-    ctx.moveTo(0, -height)
-    ctx.lineTo(0, height)
+    ctx.moveTo((-width - dx * 2) / scale, 0)
+    ctx.lineTo((width + dx) / scale, 0)
+    ctx.moveTo(0, (-height - dy * 2) / scale)
+    ctx.lineTo(0, (height - dy * 2) / scale)
+
+    this.resetTransform()
 
     ctx.strokeStyle = '#444'
     ctx.lineWidth = 1
@@ -201,12 +204,16 @@ export class Canvas {
 
   private drawGrid() {
     const ctx = this.ctx
-    const { width, height } = this
+    const scale = this.camera.xx
+    const width = this.width
+    const height = this.height
 
-    let left = -width / 2
-    let right = width / 2
-    let top = -height / 2
-    let bottom = height / 2
+    const { dx, dy } = this.camera
+
+    let left = -dx / scale
+    let right = (width - dx) / scale
+    let top = -dy / scale
+    let bottom = (height - dy) / scale
 
     // TODO: extract this to some kind of viewport bounds helper
     const mi = mat.invert(this.matrix.value)
@@ -307,20 +314,11 @@ export class Canvas {
 
     ctx.save()
 
-    // We reset the transform but then use the old transform to calculate the
-    // offset. This lets us draw a perfect circle at the given x, y position
-    // without any distortion.
-
-    const tOld = ctx.getTransform()
     this.resetTransform()
-    const tNew = ctx.getTransform()
-
-    const offsetX = tOld.e / tNew.a
-    const offsetY = tOld.f / tNew.d
 
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.arc(x + offsetX, y + offsetY, radius, 0, 2 * Math.PI)
+    ctx.arc(x, y, radius, 0, 2 * Math.PI)
     ctx.fill()
     ctx.restore()
   }

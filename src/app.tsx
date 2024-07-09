@@ -8,7 +8,9 @@ import {
   useMatrices,
   UseMatricesDispatch,
 } from './hooks/use-matrices'
+import { useOriginScale } from './hooks/use-origin-scale'
 import { childIndex } from './lib/dom'
+import { setRef } from './lib/set-ref'
 
 import styles from './app.module.css'
 
@@ -23,13 +25,29 @@ export function App() {
   )
 }
 
-function Display({ matrix }: { matrix: mat.Matrix }) {
+interface DisplayProps {
+  matrix: mat.Matrix
+}
+
+function Display({ matrix }: DisplayProps) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const { origin, scale } = useOriginScale(ref)
+  const camera = mat.mat(scale, 0, 0, scale, origin.x, origin.y)
+
   const canvasRef = useRef<Canvas | null>(null)
-  const ref = useCallback((el: HTMLCanvasElement | null) => {
+  const refCb = useCallback((el: HTMLCanvasElement | null) => {
+    setRef(ref, el)
+
     if (el) {
       canvasRef.current = new Canvas(el)
     }
   }, [])
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      canvasRef.current.updateCamera(camera)
+    }
+  }, [camera])
 
   useEffect(() => {
     if (canvasRef.current && mat.isValid(matrix)) {
@@ -37,7 +55,7 @@ function Display({ matrix }: { matrix: mat.Matrix }) {
     }
   }, [matrix])
 
-  return <canvas className={styles.canvas} ref={ref} />
+  return <canvas ref={refCb} className={styles.canvas} />
 }
 
 interface MatrixControlsProps {
