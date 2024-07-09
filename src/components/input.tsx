@@ -1,12 +1,10 @@
-import { ChangeEvent } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 
 import styles from './input.module.css'
 
-const formatter = new Intl.NumberFormat(undefined, {
-  // change this dynamically so the input isn't longer than 5 characters?
-  maximumFractionDigits: 2,
-  useGrouping: false,
-})
+type InputChangeEvent =
+  | React.ChangeEvent<HTMLInputElement>
+  | React.KeyboardEvent<HTMLInputElement>
 
 export interface NumberInputProps {
   name?: string
@@ -14,7 +12,7 @@ export interface NumberInputProps {
   step?: number
   icon?: React.ReactNode
   readOnly?: boolean
-  onChange(value: number, e: ChangeEvent<HTMLInputElement>): void
+  onChange(value: number, e: InputChangeEvent): void
 }
 
 export function NumberInput({
@@ -25,21 +23,75 @@ export function NumberInput({
   readOnly,
   onChange,
 }: NumberInputProps) {
+  const ref = useRef<HTMLInputElement>(null)
+
+  useLayoutEffect(() => {
+    if (ref.current) {
+      ref.current.value = format(value)
+    }
+  }, [value])
+
   return (
     <div className={styles.root}>
       {icon}
       <input
+        ref={ref}
         className={styles.input}
         type="number"
         name={name}
-        value={value}
         step={step}
         readOnly={readOnly}
-        onChange={(e) => {
+        onFocus={(e) => e.target.select()}
+        onBlur={(e) => {
           const value = +e.target.value
           onChange(value, e)
+        }}
+        onKeyDown={(e) => {
+          switch (e.key) {
+            case 'ArrowUp':
+              onChange(value + step, e)
+              break
+
+            case 'ArrowDown':
+              onChange(value - step, e)
+              break
+
+            case 'Enter':
+              ;(e.target as HTMLInputElement).blur()
+              break
+
+            default:
+              return
+          }
+
+          e.preventDefault()
         }}
       />
     </div>
   )
+}
+
+function createFormatter(maximumFractionDigits: number) {
+  return new Intl.NumberFormat(undefined, {
+    maximumFractionDigits,
+    useGrouping: false,
+  })
+}
+
+const f4 = createFormatter(4)
+const f3 = createFormatter(3)
+const f2 = createFormatter(2)
+const f1 = createFormatter(1)
+
+const fs = [f4, f3, f2]
+
+function format(value: number) {
+  const ideal = fs.length + 3
+
+  for (let i = 0; i < fs.length; ++i) {
+    const vi = fs[i].format(value)
+    if (vi.length <= ideal) return vi
+  }
+
+  return f1.format(value)
 }
