@@ -1,77 +1,19 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import * as mat from '@bschlenk/mat'
 
 import { Canvas } from './canvas'
 import { Matrix } from './components/matrix'
+import { useMatrices, UseMatricesDispatch } from './hooks/use-matrices'
 
 import styles from './app.module.css'
 
-interface ActionUpdate {
-  type: 'update'
-  index: number
-  value: mat.Matrix
-}
-
-interface ActionInsert {
-  type: 'insert'
-  value: mat.Matrix
-}
-
-interface ActionDelete {
-  type: 'delete'
-  index: number
-}
-
-interface ActionMove {
-  type: 'move'
-  index: number
-  dir: 1 | -1
-}
-
-type Action = ActionUpdate | ActionInsert | ActionDelete | ActionMove
-
-function reducer(matrices: mat.Matrix[], action: Action): mat.Matrix[] {
-  switch (action.type) {
-    case 'update':
-      return [
-        ...matrices.slice(0, action.index),
-        mat.round(action.value),
-        ...matrices.slice(action.index + 1),
-      ]
-
-    case 'insert':
-      return [...matrices, mat.round(action.value)]
-
-    case 'delete': {
-      const newMatrices = [
-        ...matrices.slice(0, action.index),
-        ...matrices.slice(action.index + 1),
-      ]
-
-      return newMatrices.length > 0 ? newMatrices : [mat.IDENTITY]
-    }
-
-    case 'move': {
-      const { index: i, dir } = action
-      if (i + dir < 0 || i + dir >= matrices.length) return matrices
-
-      const newMatrices = [...matrices]
-      const temp = newMatrices[i]
-      newMatrices[i] = newMatrices[i + dir]
-      newMatrices[i + dir] = temp
-      return newMatrices
-    }
-  }
-}
-
 export function App() {
-  const [matrices, dispatch] = useReducer(reducer, null, () => [mat.IDENTITY])
-  const matrix = mat.mult(...matrices)
+  const values = useMatrices()
 
   return (
     <>
-      <MatrixControls matrices={matrices} dispatch={dispatch} />
-      <Display matrix={matrix} />
+      <Display matrix={values.matrix} />
+      <MatrixControls {...values} />
     </>
   )
 }
@@ -93,13 +35,13 @@ function Display({ matrix }: { matrix: mat.Matrix }) {
   return <canvas className={styles.canvas} ref={ref} />
 }
 
-function MatrixControls({
-  matrices,
-  dispatch,
-}: {
+interface MatrixControlsProps {
   matrices: mat.Matrix[]
-  dispatch: React.Dispatch<Action>
-}) {
+  matrix: mat.Matrix
+  dispatch: UseMatricesDispatch
+}
+
+function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
   return (
     <div className={styles.controls}>
       <div className={styles.section}>
@@ -128,7 +70,7 @@ function MatrixControls({
       </div>
       <div className={styles.section}>
         <div className={styles.equals}>=</div>
-        <Matrix readonly matrix={mat.mult(...matrices)} />
+        <Matrix readonly matrix={matrix} />
       </div>
     </div>
   )
