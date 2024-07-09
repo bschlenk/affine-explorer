@@ -1,6 +1,6 @@
 import * as mat from '@bschlenk/mat'
 
-import { createSpring } from './spring'
+import { createSpring } from './lib/spring'
 
 const spring = createSpring({ stiffness: 170, damping: 26 })
 
