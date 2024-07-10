@@ -47,18 +47,30 @@ export function NumberInput({
           onChange(value, e)
         }}
         onKeyDown={(e) => {
+          const t = e.target as HTMLInputElement
+          const s = step * (e.shiftKey ? 10 : 1)
+
           switch (e.key) {
             case 'ArrowUp':
-              onChange(value + step, e)
+              onChange(value + s, e)
               break
 
             case 'ArrowDown':
-              onChange(value - step, e)
+              onChange(value - s, e)
               break
 
-            case 'Enter':
-              ;(e.target as HTMLInputElement).blur()
+            case 'Enter': {
+              const value = +t.value
+              onChange(value, e)
+              t.select()
               break
+            }
+
+            case 'Escape': {
+              t.value = format(value)
+              t.blur()
+              break
+            }
 
             default:
               return
