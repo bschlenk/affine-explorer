@@ -1,6 +1,7 @@
 import * as mat from '@bschlenk/mat'
 
 import { createSpring } from './lib/spring'
+import { renderSprite } from './lib/sprite/sprite'
 
 const spring = createSpring({ stiffness: 170, damping: 26 })
 
@@ -65,55 +66,57 @@ export class Canvas {
     this.ctx.scale(dpr, dpr)
   }
 
+  private resetScale() {
+    const dpr = window.devicePixelRatio
+    const t = this.ctx.getTransform()
+
+    const scaleX = Math.sqrt(t.a ** 2 + t.b ** 2)
+    const scaleY = Math.sqrt(t.c ** 2 + t.d ** 2)
+
+    this.ctx.scale((1 / scaleX) * dpr, (1 / scaleY) * dpr)
+  }
+
   private renderLoop() {
     let lastTime = performance.now()
 
     const loop = (time: number) => {
       const delta = time - lastTime
       lastTime = time
-      this.render(time, delta)
+
+      if (this.dirty) {
+        this.dirty = false
+
+        this.update(time, delta)
+        this.reset()
+        this.render()
+      }
+
       requestAnimationFrame(loop)
     }
 
     requestAnimationFrame(loop)
   }
 
-  private render(_time: number, delta: number) {
-    if (!this.dirty) return
+  private update(_time: number, delta: number) {
+    this.dirty ||= this.matrix.update(delta)
+  }
 
-    if (!this.matrix.update(delta)) {
-      this.dirty = false
-    }
-
-    this.reset()
-
+  private render() {
     const ctx = this.ctx
+    ctx.translate(this.width / 2, this.height / 2)
 
-    const { width, height } = this
-    mat.toCanvas(mat.translate(width / 2, height / 2), ctx)
-
-    if (!mat.isIdentity(this.matrix.value)) {
-      this.drawGhostOrigin()
-    }
+    // drag the origin before updating the matrix so it stays in screen space
+    this.drawOrigin()
 
     mat.toCanvas(this.matrix.value, ctx)
 
+    this.drawLabels()
     this.drawGrid()
-
-    ctx.save()
-    ctx.beginPath()
-    ctx.rect(0, 0, 100, 100)
-    this.resetTransform()
-    ctx.fillStyle = '#2c2c2c'
-    ctx.strokeStyle = '#fff'
-    ctx.fill()
-    ctx.stroke()
-    ctx.restore()
-
-    this.drawCircle(0, 0, 5, 'rgb(69, 133, 136)')
+    this.drawRect(0, 0, 100, 100, '#2c2c2c')
+    this.drawCircle(0, 0, 5, '#458588')
   }
 
-  private drawGhostOrigin() {
+  private drawOrigin() {
     const ctx = this.ctx
     const { width, height } = this
 
@@ -131,6 +134,56 @@ export class Canvas {
     ctx.restore()
   }
 
+  private drawLabels() {
+    // draw a number label at each grid intersection
+
+    // need to figure out the relative viewport bounding box again
+    // but for now let's just make sure we label a 16x16 square
+
+    const ctx = this.ctx
+    ctx.save()
+
+    ctx.fillStyle = '#444'
+
+    // draw horizontal labels
+    for (let x = -8; x < 8; x++) {
+      ctx.save()
+      ctx.translate(x * 100, 0)
+      this.resetScale()
+      ctx.translate(2, -1)
+      ctx.scale(2, 2)
+
+      const label = '' + x * 100
+      for (let i = 0; i < label.length; ++i) {
+        const width = renderSprite(ctx, label.charCodeAt(i))
+
+        // todo: variable letter spacing
+        ctx.translate(width + 1, 0)
+      }
+      ctx.restore()
+    }
+
+    // draw vertical labels
+    for (let y = -8; y < 8; y++) {
+      ctx.save()
+      ctx.translate(0 + 2, y * 100 - 1)
+      this.resetScale()
+      ctx.translate(2, -1)
+      ctx.scale(2, 2)
+
+      const label = '' + y * 100
+      for (let i = 0; i < label.length; ++i) {
+        const width = renderSprite(ctx, label.charCodeAt(i))
+
+        // todo: variable letter spacing
+        ctx.translate(width + 1, 0)
+      }
+      ctx.restore()
+    }
+
+    ctx.restore()
+  }
+
   private drawGrid() {
     const ctx = this.ctx
     const { width, height } = this
@@ -140,6 +193,7 @@ export class Canvas {
     let top = -height / 2
     let bottom = height / 2
 
+    // TODO: extract this to some kind of viewport bounds helper
     const mi = mat.invert(this.matrix.value)
     if (!mi) return
 
@@ -196,6 +250,26 @@ export class Canvas {
     this.resetTransform()
     ctx.strokeStyle = '#444'
     ctx.lineWidth = 2
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  private drawRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fill: string
+  ) {
+    const ctx = this.ctx
+
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(x, y, width, height)
+    this.resetTransform()
+    ctx.fillStyle = fill
+    ctx.strokeStyle = '#fff'
+    ctx.fill()
     ctx.stroke()
     ctx.restore()
   }
