@@ -1,5 +1,6 @@
 import * as mat from '@bschlenk/mat'
 
+import { composeMatrixPolar, decomposeMatrixPolar } from './lib/matrix-utils'
 import { createSpring } from './lib/spring'
 import { renderSprite } from './lib/sprite/sprite'
 
@@ -8,7 +9,11 @@ const spring = createSpring({ stiffness: 170, damping: 26 })
 export class Canvas {
   private ctx: CanvasRenderingContext2D
   private dirty = true
-  private matrix = spring(mat.IDENTITY)
+  private matrix = spring.indirect(
+    mat.IDENTITY,
+    decomposeMatrixPolar as any,
+    composeMatrixPolar as any
+  )
   private width = 0
   private height = 0
 

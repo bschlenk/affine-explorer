@@ -6,6 +6,22 @@ export interface SpringOptions {
   mass?: number
 }
 
+export interface SpringValue<T> {
+  value: T
+  set(value: T): void
+  update(delta: number): boolean
+}
+
+export interface SpringMaker<T extends Record<string, number>> {
+  (target: T): SpringValue<T>
+
+  indirect<T>(
+    target: T,
+    decompose: (value: T) => Record<string, number>,
+    compose: (value: Record<string, number>) => T
+  ): SpringValue<T>
+}
+
 export function createSpring({
   stiffness = 100,
   damping = 10,
@@ -13,7 +29,7 @@ export function createSpring({
 }: SpringOptions = {}) {
   const opts = { stiffness, damping, mass }
 
-  return <T extends Record<string, number>>(target: T) => {
+  function spring<T extends Record<string, number>>(target: T) {
     // create an updater that goes over all the values and updates them
     // values can be a single number, an array of numbers, or an object of numbers
 
@@ -23,7 +39,7 @@ export function createSpring({
     const velocities = keys.map(() => 0)
 
     return {
-      value: { ...target },
+      value: structuredClone(target),
       set(value: T) {
         target = value
       },
@@ -59,6 +75,31 @@ export function createSpring({
       },
     }
   }
+
+  function indirect<T>(
+    target: T,
+    decompose: (value: T) => Record<string, number>,
+    compose: (value: Record<string, number>) => T
+  ) {
+    const dt = decompose(target)
+    const s = spring(dt)
+
+    return {
+      get value() {
+        return compose(s.value)
+      },
+      set(value: T) {
+        s.set(decompose(value))
+      },
+      update(delta: number) {
+        return s.update(delta)
+      },
+    }
+  }
+
+  spring.indirect = indirect
+
+  return spring
 }
 
 function step(
