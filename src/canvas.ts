@@ -271,11 +271,24 @@ export class Canvas {
     ctx.save()
     ctx.beginPath()
     ctx.rect(x, y, width, height)
+
+    ctx.save()
     this.resetTransform()
     ctx.fillStyle = fill
     ctx.strokeStyle = '#fff'
     ctx.fill()
     ctx.stroke()
+    ctx.restore()
+
+    ctx.fillStyle = '#ccc'
+    ctx.font = '72px Inter'
+    const m = ctx.measureText('R')
+    ctx.fillText(
+      'R',
+      x + width / 2 - m.width / 2,
+      y + height / 2 + m.actualBoundingBoxAscent / 2,
+    )
+
     ctx.restore()
   }
 
