@@ -39,7 +39,7 @@ export function useMatrices() {
 
   const matrix = useMemo(
     () => mat.mult(...matrices.map((m) => m.value)),
-    [matrices]
+    [matrices],
   )
 
   return { matrices, matrix, dispatch }
@@ -65,8 +65,8 @@ function reducer(matrices: MatrixWithId[], action: Action): MatrixWithId[] {
         ...matrices.slice(action.index + 1),
       ]
 
-      return newMatrices.length > 0
-        ? newMatrices
+      return newMatrices.length > 0 ?
+          newMatrices
         : [{ id: nextId++, value: mat.IDENTITY }]
     }
 

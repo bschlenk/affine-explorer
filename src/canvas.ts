@@ -12,7 +12,7 @@ export class Canvas {
   private matrix = spring.indirect(
     mat.IDENTITY,
     decomposeMatrixPolar as any,
-    composeMatrixPolar as any
+    composeMatrixPolar as any,
   )
   private width = 0
   private height = 0
@@ -54,7 +54,7 @@ export class Canvas {
             break
           }
         }
-      }
+      },
     )
 
     observer.observe(this.canvas)
@@ -264,7 +264,7 @@ export class Canvas {
     y: number,
     width: number,
     height: number,
-    fill: string
+    fill: string,
   ) {
     const ctx = this.ctx
 

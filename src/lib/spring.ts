@@ -18,7 +18,7 @@ export interface SpringMaker<T extends Record<string, number>> {
   indirect<T>(
     target: T,
     decompose: (value: T) => Record<string, number>,
-    compose: (value: Record<string, number>) => T
+    compose: (value: Record<string, number>) => T,
   ): SpringValue<T>
 }
 
@@ -64,7 +64,7 @@ export function createSpring({
             delta / 1000,
             currentValue - targetValue,
             velocity,
-            opts
+            opts,
           )
 
           this.value[key] = (targetValue + next[0]) as any
@@ -79,7 +79,7 @@ export function createSpring({
   function indirect<T>(
     target: T,
     decompose: (value: T) => Record<string, number>,
-    compose: (value: Record<string, number>) => T
+    compose: (value: Record<string, number>) => T,
   ) {
     const dt = decompose(target)
     const s = spring(dt)
@@ -106,7 +106,7 @@ function step(
   delta: number,
   displacement: number,
   velocity: number,
-  opts: Required<SpringOptions>
+  opts: Required<SpringOptions>,
 ) {
   /* Spring stiffness, in kg / s^2 */
   const k = -opts.stiffness

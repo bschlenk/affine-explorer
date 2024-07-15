@@ -32,7 +32,7 @@ export function Matrix({
       const name = e.target.name as MatrixElement
       setMatrix?.({ ...matrix, [name]: value })
     },
-    [matrix, setMatrix]
+    [matrix, setMatrix],
   )
 
   const rot = mat.getRotation(matrix)
@@ -75,7 +75,7 @@ export function Matrix({
           onChange={(value) => {
             let m = mat.mult(
               matrix,
-              mat.scale(value / matrix.xx, value / matrix.yy)
+              mat.scale(value / matrix.xx, value / matrix.yy),
             )
 
             if (!mat.isValid(m)) {
