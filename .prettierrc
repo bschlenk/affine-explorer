@@ -1,4 +1,5 @@
 {
+  "experimentalTernaries": true,
   "proseWrap": "never",
   "semi": false,
   "singleQuote": true
