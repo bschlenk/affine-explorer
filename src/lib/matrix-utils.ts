@@ -27,3 +27,12 @@ export function composeMatrixPolar(p: MatrixPolar): mat.Matrix {
 
   return { xx, xy, yx, yy, dx, dy }
 }
+
+export function correctAngle(angle: number, target: number) {
+  const diff = Math.abs(target - angle)
+  return (
+    diff <= Math.PI ? angle
+    : angle > target ? angle - Math.PI * 2
+    : angle + Math.PI * 2
+  )
+}

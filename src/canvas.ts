@@ -1,6 +1,10 @@
 import * as mat from '@bschlenk/mat'
 
-import { composeMatrixPolar, decomposeMatrixPolar } from './lib/matrix-utils'
+import {
+  composeMatrixPolar,
+  correctAngle,
+  decomposeMatrixPolar,
+} from './lib/matrix-utils'
 import { createSpring } from './lib/spring'
 import { renderSprite } from './lib/sprite/sprite'
 
@@ -35,6 +39,12 @@ export class Canvas {
   public updateMatrix(matrix: mat.Matrix) {
     this.dirty = true
     this.matrix.set(matrix)
+
+    const v = this.matrix.target
+    const iv = this.matrix.internalValue
+
+    iv.xa = correctAngle(iv.xa, v.xa)
+    iv.ya = correctAngle(iv.ya, v.ya)
   }
 
   private initBindings() {

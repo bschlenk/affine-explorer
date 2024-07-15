@@ -6,40 +6,39 @@ export interface SpringOptions {
   mass?: number
 }
 
-export interface SpringValue<T> {
+export interface SpringValue<T, U = T> {
   value: T
+  target: U
   set(value: T): void
   update(delta: number): boolean
 }
 
-export interface SpringMaker<T extends Record<string, number>> {
-  (target: T): SpringValue<T>
+export interface SpringMaker {
+  <T extends Record<string, number>>(target: T): SpringValue<T>
 
-  indirect<T>(
+  indirect<T, U extends Record<string, number>>(
     target: T,
-    decompose: (value: T) => Record<string, number>,
-    compose: (value: Record<string, number>) => T,
-  ): SpringValue<T>
+    decompose: (value: T) => U,
+    compose: (value: U) => T,
+  ): SpringValue<T, U> & { internalValue: U }
 }
 
 export function createSpring({
   stiffness = 100,
   damping = 10,
   mass = 1,
-}: SpringOptions = {}) {
+}: SpringOptions = {}): SpringMaker {
   const opts = { stiffness, damping, mass }
 
   function spring<T extends Record<string, number>>(target: T) {
-    // create an updater that goes over all the values and updates them
-    // values can be a single number, an array of numbers, or an object of numbers
-
-    // keys, for each key we need to store the current value, the target value, and the velocity
     const keys = Object.keys(target) as (keyof T)[]
-
     const velocities = keys.map(() => 0)
 
     return {
       value: structuredClone(target),
+      get target() {
+        return target
+      },
       set(value: T) {
         target = value
       },
@@ -76,20 +75,25 @@ export function createSpring({
     }
   }
 
-  function indirect<T>(
+  function indirect<T, U extends Record<string, number>>(
     target: T,
-    decompose: (value: T) => Record<string, number>,
-    compose: (value: Record<string, number>) => T,
+    decompose: (value: T) => U,
+    compose: (value: U) => T,
   ) {
-    const dt = decompose(target)
-    const s = spring(dt)
+    const s = spring(decompose(target))
 
     return {
       get value() {
         return compose(s.value)
       },
+      get target() {
+        return s.target
+      },
       set(value: T) {
         s.set(decompose(value))
+      },
+      get internalValue(): U {
+        return s.value
       },
       update(delta: number) {
         return s.update(delta)
