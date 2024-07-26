@@ -5,7 +5,7 @@ import {
   correctAngle,
   decomposeMatrixPolar,
 } from './lib/matrix-utils'
-import { observe } from './lib/observe'
+import { resizeObserver } from './lib/resize-observer'
 import { createSpring } from './lib/spring'
 import { renderSprite } from './lib/sprite/sprite'
 
@@ -57,8 +57,10 @@ export class Canvas {
   private initBindings() {
     const canvas = this.canvas
 
-    observe(canvas, ({ width, height }) => {
+    resizeObserver(canvas, (e) => {
       const dpr = window.devicePixelRatio
+      const { inlineSize: width, blockSize: height } = e.contentBoxSize[0]
+
       canvas.width = width * dpr
       canvas.height = height * dpr
 
