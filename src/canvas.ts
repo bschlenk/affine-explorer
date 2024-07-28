@@ -1,10 +1,13 @@
 import * as mat from '@bschlenk/mat'
+import * as vec from '@bschlenk/vec'
 
 import {
   DEFAULT_ORIGIN_SCALE,
   originScaleToCanvas,
+  originScaletoMat,
   setupOriginScaleListener,
 } from './hooks/use-origin-scale'
+import { snapDown, snapUp } from './lib/math'
 import {
   composeMatrixPolar,
   correctAngle,
@@ -222,19 +225,24 @@ export class Canvas {
 
     ctx.fillStyle = '#444'
 
+    const m = mat.mult(originScaletoMat(this.originScale), this.matrix.value)
+
     // draw horizontal labels
 
-    const xMin = Math.round(left / 100)
-    const xMax = Math.round(right / 100)
+    const xScale = Math.hypot(m.xx, m.xy)
+    const xStep = 100 * 2 ** -Math.ceil(Math.log2(xScale))
 
-    for (let x = xMin; x < xMax; x++) {
+    const xMin = snapDown(left, xStep)
+    const xMax = snapUp(right, xStep)
+
+    for (let x = xMin; x < xMax; x += xStep) {
       ctx.save()
-      ctx.translate(x * 100, 0)
+      ctx.translate(x, 0)
       this.resetScale()
       ctx.translate(2, -1)
       ctx.scale(2, 2)
 
-      const label = '' + x * 100
+      const label = '' + x
       renderString(ctx, label)
 
       ctx.restore()
@@ -242,17 +250,20 @@ export class Canvas {
 
     // draw vertical labels
 
-    const yMin = Math.round(top / 100)
-    const yMax = Math.round(bottom / 100)
+    const yScale = Math.hypot(m.yx, m.yy)
+    const yStep = 100 * 2 ** -Math.ceil(Math.log2(yScale))
 
-    for (let y = yMin; y < yMax; y++) {
+    const yMin = snapDown(top, yStep)
+    const yMax = snapUp(bottom, yStep)
+
+    for (let y = yMin; y < yMax; y += yStep) {
       ctx.save()
-      ctx.translate(0 + 2, y * 100 - 1)
+      ctx.translate(0 + 2, y - 1)
       this.resetScale()
       ctx.translate(2, -1)
       ctx.scale(2, 2)
 
-      const label = '' + y * 100
+      const label = '' + y
       renderString(ctx, label)
 
       ctx.restore()
@@ -268,29 +279,33 @@ export class Canvas {
     const ctx = this.ctx
     const { top, bottom, left, right } = canvasRect
 
+    const m = mat.mult(originScaletoMat(this.originScale), this.matrix.value)
+
     ctx.save()
     ctx.beginPath()
 
     // Draw vertical grid lines
 
-    for (let d = 0; d < right; d += 100) {
-      ctx.moveTo(d, top)
-      ctx.lineTo(d, bottom)
-    }
+    const xScale = Math.hypot(m.xx, m.xy)
+    const xStep = 100 * 2 ** -Math.ceil(Math.log2(xScale))
 
-    for (let d = -100; d > left; d -= 100) {
+    const xMin = snapDown(left, xStep)
+    const xMax = snapUp(right, xStep)
+
+    for (let d = xMin; d < xMax; d += xStep) {
       ctx.moveTo(d, top)
       ctx.lineTo(d, bottom)
     }
 
     // Draw horizontal grid lines
 
-    for (let d = 0; d < bottom; d += 100) {
-      ctx.moveTo(left, d)
-      ctx.lineTo(right, d)
-    }
+    const yScale = Math.hypot(m.yx, m.yy)
+    const yStep = 100 * 2 ** -Math.ceil(Math.log2(yScale))
 
-    for (let d = -100; d > top; d -= 100) {
+    const yMin = snapDown(top, yStep)
+    const yMax = snapUp(bottom, yStep)
+
+    for (let d = yMin; d < yMax; d += yStep) {
       ctx.moveTo(left, d)
       ctx.lineTo(right, d)
     }
