@@ -39,13 +39,9 @@ export class Canvas {
     this.ctx = canvas.getContext('2d')!
 
     const { width, height } = this.canvas.getBoundingClientRect()
-    const dpr = window.devicePixelRatio
-    this.width = width
-    this.height = height
-    this.canvas.width = width * dpr
-    this.canvas.height = height * dpr
     this.originScale.origin = vec.vec(width / 2, height / 2)
 
+    this.updateSize(width, height)
     this.initBindings()
     this.reset()
     this.renderLoop()
@@ -114,15 +110,8 @@ export class Canvas {
     const canvas = this.canvas
 
     resizeObserver(canvas, (e) => {
-      const dpr = window.devicePixelRatio
       const { inlineSize: width, blockSize: height } = e.contentBoxSize[0]
-
-      canvas.width = width * dpr
-      canvas.height = height * dpr
-
-      this.width = width
-      this.height = height
-
+      this.updateSize(width, height)
       this.invalidate()
     })
 
