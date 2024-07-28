@@ -12,7 +12,7 @@ import {
 } from './lib/matrix-utils'
 import { resizeObserver } from './lib/resize-observer'
 import { createSpring } from './lib/spring'
-import { renderSprite } from './lib/sprite/sprite'
+import { renderString } from './lib/sprite/sprite'
 
 interface Rect {
   top: number
@@ -246,12 +246,8 @@ export class Canvas {
       ctx.scale(2, 2)
 
       const label = '' + x * 100
-      for (let i = 0; i < label.length; ++i) {
-        const width = renderSprite(ctx, label.charCodeAt(i))
+      renderString(ctx, label)
 
-        // todo: variable letter spacing
-        ctx.translate(width + 1, 0)
-      }
       ctx.restore()
     }
 
@@ -268,12 +264,8 @@ export class Canvas {
       ctx.scale(2, 2)
 
       const label = '' + y * 100
-      for (let i = 0; i < label.length; ++i) {
-        const width = renderSprite(ctx, label.charCodeAt(i))
+      renderString(ctx, label)
 
-        // todo: variable letter spacing
-        ctx.translate(width + 1, 0)
-      }
       ctx.restore()
     }
 

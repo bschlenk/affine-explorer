@@ -126,6 +126,17 @@ export function renderSprite(ctx: CanvasRenderingContext2D, charCode: number) {
   return num.width
 }
 
+export function renderString(
+  ctx: CanvasRenderingContext2D,
+  str: string,
+  spacing = 1,
+) {
+  for (let i = 0; i < str.length; ++i) {
+    const width = renderSprite(ctx, str.charCodeAt(i))
+    ctx.translate(width + spacing, 0)
+  }
+}
+
 function sprite(template: TemplateStringsArray) {
   return new Sprite(template[0])
 }
