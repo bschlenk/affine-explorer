@@ -9,6 +9,13 @@ import { resizeObserver } from './lib/resize-observer'
 import { createSpring } from './lib/spring'
 import { renderSprite } from './lib/sprite/sprite'
 
+interface Rect {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
 const spring = createSpring({ stiffness: 170, damping: 26 })
 
 export class Canvas {
@@ -39,12 +46,12 @@ export class Canvas {
   }
 
   public updateCamera(camera: mat.Matrix) {
-    this.dirty = true
+    this.invalidate()
     this.camera = camera
   }
 
   public updateMatrix(matrix: mat.Matrix) {
-    this.dirty = true
+    this.invalidate()
     this.matrix.set(matrix)
 
     const v = this.matrix.target
@@ -52,6 +59,49 @@ export class Canvas {
 
     iv.xa = correctAngle(iv.xa, v.xa)
     iv.ya = correctAngle(iv.ya, v.ya)
+  }
+
+  private invalidate() {
+    this.dirty = true
+    this._canvasSpaceViewportRect = undefined
+  }
+
+  private _canvasSpaceViewportRect: Rect | null | undefined = undefined
+  private canvasSpaceViewportRect() {
+    if (!this._canvasSpaceViewportRect) {
+      const scale = this.camera.xx
+      const width = this.width
+      const height = this.height
+
+      const { dx, dy } = this.camera
+
+      let left = -dx / scale
+      let right = (width - dx) / scale
+      let top = -dy / scale
+      let bottom = (height - dy) / scale
+
+      console.log({ left, right, top, bottom })
+
+      const mi = mat.invert(this.matrix.value)
+      if (!mi) {
+        this._canvasSpaceViewportRect = null
+        return null
+      }
+
+      const tl = mat.transformPoint(mi, { x: left, y: top })
+      const tr = mat.transformPoint(mi, { x: right, y: top })
+      const br = mat.transformPoint(mi, { x: right, y: bottom })
+      const bl = mat.transformPoint(mi, { x: left, y: bottom })
+
+      left = Math.min(tl.x, tr.x, br.x, bl.x)
+      right = Math.max(tl.x, tr.x, br.x, bl.x)
+      top = Math.min(tl.y, tr.y, br.y, bl.y)
+      bottom = Math.max(tl.y, tr.y, br.y, bl.y)
+
+      this._canvasSpaceViewportRect = { left, right, top, bottom }
+    }
+
+    return this._canvasSpaceViewportRect
   }
 
   private initBindings() {
@@ -67,7 +117,7 @@ export class Canvas {
       this.width = width
       this.height = height
 
-      this.dirty = true
+      this.invalidate()
     })
   }
 
@@ -118,7 +168,10 @@ export class Canvas {
   }
 
   private update(_time: number, delta: number) {
-    this.dirty ||= this.matrix.update(delta)
+    let changed = false
+    changed ||= this.matrix.update(delta)
+
+    if (changed) this.invalidate()
   }
 
   private render() {
@@ -138,16 +191,14 @@ export class Canvas {
 
   private drawOrigin() {
     const { ctx, width, height } = this
-
-    const scale = ctx.getTransform().a
-    const { dx, dy } = this.camera
+    const { xx: scale, dx, dy } = this.camera
 
     ctx.save()
     ctx.beginPath()
-    ctx.moveTo((-width - dx * 2) / scale, 0)
-    ctx.lineTo((width + dx) / scale, 0)
-    ctx.moveTo(0, (-height - dy * 2) / scale)
-    ctx.lineTo(0, (height - dy * 2) / scale)
+    ctx.moveTo(-dx / scale, 0)
+    ctx.lineTo(-dx + width / scale, 0)
+    ctx.moveTo(0, -dy / scale)
+    ctx.lineTo(0, -dy + height / scale)
 
     this.resetTransform()
 
@@ -161,16 +212,22 @@ export class Canvas {
   private drawLabels() {
     // draw a number label at each grid intersection
 
-    // need to figure out the relative viewport bounding box again
-    // but for now let's just make sure we label a 16x16 square
+    const canvasRect = this.canvasSpaceViewportRect()
+    if (!canvasRect) return
 
     const ctx = this.ctx
+    const { top, bottom, left, right } = canvasRect
+
     ctx.save()
 
     ctx.fillStyle = '#444'
 
     // draw horizontal labels
-    for (let x = -8; x < 8; x++) {
+
+    const xMin = Math.round(left / 100)
+    const xMax = Math.round(right / 100)
+
+    for (let x = xMin; x < xMax; x++) {
       ctx.save()
       ctx.translate(x * 100, 0)
       this.resetScale()
@@ -188,7 +245,11 @@ export class Canvas {
     }
 
     // draw vertical labels
-    for (let y = -8; y < 8; y++) {
+
+    const yMin = Math.round(top / 100)
+    const yMax = Math.round(bottom / 100)
+
+    for (let y = yMin; y < yMax; y++) {
       ctx.save()
       ctx.translate(0 + 2, y * 100 - 1)
       this.resetScale()
@@ -209,31 +270,11 @@ export class Canvas {
   }
 
   private drawGrid() {
+    const canvasRect = this.canvasSpaceViewportRect()
+    if (!canvasRect) return
+
     const ctx = this.ctx
-    const scale = this.camera.xx
-    const width = this.width
-    const height = this.height
-
-    const { dx, dy } = this.camera
-
-    let left = -dx / scale
-    let right = (width - dx) / scale
-    let top = -dy / scale
-    let bottom = (height - dy) / scale
-
-    // TODO: extract this to some kind of viewport bounds helper
-    const mi = mat.invert(this.matrix.value)
-    if (!mi) return
-
-    const tl = mat.transformPoint(mi, { x: left, y: top })
-    const tr = mat.transformPoint(mi, { x: right, y: top })
-    const br = mat.transformPoint(mi, { x: right, y: bottom })
-    const bl = mat.transformPoint(mi, { x: left, y: bottom })
-
-    left = Math.min(tl.x, tr.x, br.x, bl.x)
-    right = Math.max(tl.x, tr.x, br.x, bl.x)
-    top = Math.min(tl.y, tr.y, br.y, bl.y)
-    bottom = Math.max(tl.y, tr.y, br.y, bl.y)
+    const { top, bottom, left, right } = canvasRect
 
     ctx.save()
     ctx.beginPath()
@@ -262,12 +303,14 @@ export class Canvas {
       ctx.lineTo(right, d)
     }
 
+    // Stroke thin grid lines
     this.resetTransform()
     ctx.strokeStyle = '#444'
     ctx.lineWidth = 0.5
-    this.ctx.stroke()
+    ctx.stroke()
     ctx.restore()
 
+    // Draw & stroke thicker origin lines
     ctx.save()
     ctx.beginPath()
     ctx.moveTo(left, 0)
