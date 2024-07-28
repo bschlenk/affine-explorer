@@ -99,7 +99,11 @@ export class Canvas {
       const delta = time - lastTime
       lastTime = time
 
-      if (this.dirty) {
+      // If the delta is more than 2 seconds, just throw the frame away.
+      // On my computer this only happens when I have devtools open.
+      const deltaTooLarge = delta > 2000
+
+      if (this.dirty && !deltaTooLarge) {
         this.dirty = false
 
         this.update(time, delta)
