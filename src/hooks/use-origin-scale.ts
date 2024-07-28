@@ -1,66 +1,74 @@
-import { type RefObject, useEffect, useLayoutEffect, useState } from 'react'
+import * as mat from '@bschlenk/mat'
 import * as vec from '@bschlenk/vec'
 
 import { listen } from '../lib/event'
 
-const DEFAULT = { origin: { x: 0, y: 0 }, scale: 1 }
+export interface OriginScale {
+  origin: vec.Vector
+  scale: number
+}
 
-export function useOriginScale(ref: RefObject<HTMLElement>) {
-  const [originScale, setOriginScale] = useState(DEFAULT)
+export const DEFAULT_ORIGIN_SCALE: OriginScale = {
+  origin: { x: 0, y: 0 },
+  scale: 1,
+}
 
-  useLayoutEffect(() => {
-    const box = ref.current!.getBoundingClientRect()
+export function originScaleToCanvas(
+  { origin: { x, y }, scale }: OriginScale,
+  ctx: CanvasRenderingContext2D,
+) {
+  ctx.transform(scale, 0, 0, scale, x, y)
+}
 
-    setOriginScale({
-      origin: vec.vec(box.width / 2, box.height / 2),
-      scale: 1,
-    })
-  }, [ref])
+export function originScaletoMat({
+  origin: { x, y },
+  scale,
+}: OriginScale): mat.Matrix {
+  return mat.mat(scale, 0, 0, scale, x, y)
+}
 
-  useEffect(
-    () =>
-      listen(
-        ref.current!,
-        'wheel',
-        (e) => {
-          e.preventDefault()
+export function setupOriginScaleListener(
+  el: HTMLElement,
+  cb: (update: (e: OriginScale) => OriginScale) => void,
+) {
+  return listen(
+    el,
+    'wheel',
+    (e) => {
+      e.preventDefault()
 
-          const { deltaX, deltaY, ctrlKey } = e
+      const { deltaX, deltaY, ctrlKey } = e
 
-          if (ctrlKey) {
-            // zoom
-            const mouse = relativeMouse(e, e.currentTarget! as HTMLElement)
+      if (ctrlKey) {
+        // zoom
+        const mouse = relativeMouse(e, e.currentTarget! as HTMLElement)
 
-            setOriginScale((value) => {
-              const scaleBy = 1 - deltaY / 100
+        cb((value) => {
+          const scaleBy = 1 - deltaY / 100
 
-              const origin = vec.subtract(
-                mouse,
-                vec.scale(vec.subtract(mouse, value.origin), scaleBy),
-              )
-              const scale = value.scale * scaleBy
+          const origin = vec.subtract(
+            mouse,
+            vec.scale(vec.subtract(mouse, value.origin), scaleBy),
+          )
+          const scale = value.scale * scaleBy
 
-              return { origin, scale }
-            })
-          } else {
-            // pan
-            setOriginScale((value) => {
-              return {
-                ...value,
-                origin: vec.add(value.origin, {
-                  x: -deltaX,
-                  y: -deltaY,
-                }),
-              }
-            })
+          return { origin, scale }
+        })
+      } else {
+        // pan
+        cb((value) => {
+          return {
+            ...value,
+            origin: vec.add(value.origin, {
+              x: -deltaX,
+              y: -deltaY,
+            }),
           }
-        },
-        { passive: false },
-      ),
-    [ref],
+        })
+      }
+    },
+    { passive: false },
   )
-
-  return originScale
 }
 
 function relativeMouse(

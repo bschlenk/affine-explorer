@@ -1,6 +1,11 @@
 import * as mat from '@bschlenk/mat'
 
 import {
+  DEFAULT_ORIGIN_SCALE,
+  originScaleToCanvas,
+  setupOriginScaleListener,
+} from './hooks/use-origin-scale'
+import {
   composeMatrixPolar,
   correctAngle,
   decomposeMatrixPolar,
@@ -21,7 +26,7 @@ const spring = createSpring({ stiffness: 170, damping: 26 })
 export class Canvas {
   private ctx: CanvasRenderingContext2D
   private dirty = true
-  private camera = mat.IDENTITY
+  private originScale = DEFAULT_ORIGIN_SCALE
   private matrix = spring.indirect(
     mat.IDENTITY,
     decomposeMatrixPolar as any,
@@ -33,21 +38,17 @@ export class Canvas {
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!
 
-    const rect = this.canvas.getBoundingClientRect()
+    const { width, height } = this.canvas.getBoundingClientRect()
     const dpr = window.devicePixelRatio
-    this.width = rect.width
-    this.height = rect.height
-    this.canvas.width = rect.width * dpr
-    this.canvas.height = rect.height * dpr
+    this.width = width
+    this.height = height
+    this.canvas.width = width * dpr
+    this.canvas.height = height * dpr
+    this.originScale.origin = vec.vec(width / 2, height / 2)
 
     this.initBindings()
     this.reset()
     this.renderLoop()
-  }
-
-  public updateCamera(camera: mat.Matrix) {
-    this.invalidate()
-    this.camera = camera
   }
 
   public updateMatrix(matrix: mat.Matrix) {
@@ -66,21 +67,26 @@ export class Canvas {
     this._canvasSpaceViewportRect = undefined
   }
 
+  private updateSize(width: number, height: number) {
+    const dpr = window.devicePixelRatio
+    this.canvas.width = width * dpr
+    this.canvas.height = height * dpr
+
+    this.width = width
+    this.height = height
+  }
+
   private _canvasSpaceViewportRect: Rect | null | undefined = undefined
   private canvasSpaceViewportRect() {
     if (!this._canvasSpaceViewportRect) {
-      const scale = this.camera.xx
+      const { origin, scale } = this.originScale
       const width = this.width
       const height = this.height
 
-      const { dx, dy } = this.camera
-
-      let left = -dx / scale
-      let right = (width - dx) / scale
-      let top = -dy / scale
-      let bottom = (height - dy) / scale
-
-      console.log({ left, right, top, bottom })
+      let left = -origin.x / scale
+      let right = (width - origin.x) / scale
+      let top = -origin.y / scale
+      let bottom = (height - origin.y) / scale
 
       const mi = mat.invert(this.matrix.value)
       if (!mi) {
@@ -117,6 +123,11 @@ export class Canvas {
       this.width = width
       this.height = height
 
+      this.invalidate()
+    })
+
+    setupOriginScaleListener(canvas, (update) => {
+      this.originScale = update(this.originScale)
       this.invalidate()
     })
   }
@@ -176,7 +187,7 @@ export class Canvas {
 
   private render() {
     const ctx = this.ctx
-    mat.toCanvas(this.camera, ctx)
+    originScaleToCanvas(this.originScale, ctx)
 
     // drag the origin before updating the matrix so it stays in screen space
     this.drawOrigin()
@@ -191,14 +202,14 @@ export class Canvas {
 
   private drawOrigin() {
     const { ctx, width, height } = this
-    const { xx: scale, dx, dy } = this.camera
+    const { scale, origin } = this.originScale
 
     ctx.save()
     ctx.beginPath()
-    ctx.moveTo(-dx / scale, 0)
-    ctx.lineTo(-dx + width / scale, 0)
-    ctx.moveTo(0, -dy / scale)
-    ctx.lineTo(0, -dy + height / scale)
+    ctx.moveTo(-origin.x / scale, 0)
+    ctx.lineTo(-origin.x + width / scale, 0)
+    ctx.moveTo(0, -origin.y / scale)
+    ctx.lineTo(0, -origin.y + height / scale)
 
     this.resetTransform()
 
