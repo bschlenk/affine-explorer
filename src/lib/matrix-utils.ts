@@ -13,8 +13,8 @@ interface MatrixPolar {
 export function decomposeMatrixPolar(m: mat.Matrix): MatrixPolar {
   const { a: xa, r: xr } = vec.toPolar({ x: m.xx, y: m.xy })
   const { a: ya, r: yr } = vec.toPolar({ x: m.yx, y: m.yy })
-  const tx = m.dx
-  const ty = m.dy
+  const tx = m.tx
+  const ty = m.ty
 
   return { xa, xr, ya, yr, tx, ty }
 }
@@ -22,10 +22,10 @@ export function decomposeMatrixPolar(m: mat.Matrix): MatrixPolar {
 export function composeMatrixPolar(p: MatrixPolar): mat.Matrix {
   const { x: xx, y: xy } = vec.fromPolar({ a: p.xa, r: p.xr })
   const { x: yx, y: yy } = vec.fromPolar({ a: p.ya, r: p.yr })
-  const dx = p.tx
-  const dy = p.ty
+  const tx = p.tx
+  const ty = p.ty
 
-  return { xx, xy, yx, yy, dx, dy }
+  return { xx, xy, yx, yy, tx, ty }
 }
 
 export function correctAngle(angle: number, target: number) {
