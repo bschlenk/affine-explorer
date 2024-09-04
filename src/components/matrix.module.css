@@ -62,4 +62,9 @@
   background: #1e1e1e;
   padding: 0;
   border-radius: 1000px;
+
+  &:focus-within {
+    outline: 2px solid #bfbfbf;
+    outline-offset: -1px;
+  }
 }

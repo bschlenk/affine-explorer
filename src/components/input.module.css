@@ -2,8 +2,6 @@
   position: relative;
   min-width: 0;
   height: 32px;
-  background: #383838;
-  border-radius: 5px;
 
   --color-icon: #bfbfbf;
 
@@ -22,7 +20,8 @@
   text-align: right;
   padding: 4px;
   padding-left: 2px;
-  background: none;
+  background: #383838;
+  border-radius: 5px;
 
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
@@ -32,4 +31,9 @@
   }
 
   -moz-appearance: textfield; /* Firefox */
+
+  &:focus {
+    outline: 2px solid #bfbfbf;
+    outline-offset: -1px;
+  }
 }
