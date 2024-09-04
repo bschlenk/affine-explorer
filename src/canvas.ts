@@ -118,6 +118,11 @@ export class Canvas {
       const { inlineSize: width, blockSize: height } = e.contentBoxSize[0]
       this.updateSize(width, height)
       this.invalidate()
+
+      // force a render - changing the size clears the canvas, and we don't want
+      // there to be a flash of a blank canvas before the next animation frame
+      this.reset()
+      this.render()
     })
 
     setupOriginScaleListener(canvas, (update) => {
