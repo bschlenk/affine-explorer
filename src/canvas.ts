@@ -104,6 +104,8 @@ export class Canvas {
       bottom = Math.max(tl.y, tr.y, br.y, bl.y)
 
       this._canvasSpaceViewportRect = { left, right, top, bottom }
+
+      console.log(this._canvasSpaceViewportRect)
     }
 
     return this._canvasSpaceViewportRect
@@ -199,9 +201,9 @@ export class Canvas {
     ctx.save()
     ctx.beginPath()
     ctx.moveTo(-origin.x / scale, 0)
-    ctx.lineTo(-origin.x + width / scale, 0)
+    ctx.lineTo((-origin.x + width) / scale, 0)
     ctx.moveTo(0, -origin.y / scale)
-    ctx.lineTo(0, -origin.y + height / scale)
+    ctx.lineTo(0, (-origin.y + height) / scale)
 
     this.resetTransform()
 
