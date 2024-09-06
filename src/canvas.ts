@@ -104,8 +104,6 @@ export class Canvas {
       bottom = Math.max(tl.y, tr.y, br.y, bl.y)
 
       this._canvasSpaceViewportRect = { left, right, top, bottom }
-
-      console.log(this._canvasSpaceViewportRect)
     }
 
     return this._canvasSpaceViewportRect
