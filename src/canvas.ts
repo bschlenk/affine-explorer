@@ -132,6 +132,7 @@ export class Canvas {
   private reset() {
     this.ctx.reset()
     this.resetTransform()
+    this.ctx.font = '72px Inter'
   }
 
   private resetTransform() {
@@ -359,8 +360,7 @@ export class Canvas {
     ctx.restore()
 
     ctx.fillStyle = '#ccc'
-    ctx.font = '72px Inter'
-    const m = ctx.measureText('R')
+    const m = this.measureText('R')
     ctx.fillText(
       'R',
       x + width / 2 - m.width / 2,
@@ -382,5 +382,15 @@ export class Canvas {
     ctx.arc(x, y, radius, 0, 2 * Math.PI)
     ctx.fill()
     ctx.restore()
+  }
+
+  private _measuredText = new Map<string, TextMetrics>()
+  private measureText(str: string): TextMetrics {
+    let val = this._measuredText.get(str)
+    if (!val) {
+      val = this.ctx.measureText(str)
+      this._measuredText.set(str, val)
+    }
+    return val
   }
 }
