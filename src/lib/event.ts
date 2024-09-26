@@ -20,7 +20,7 @@ export function listen<K extends keyof HTMLElementEventMap>(
   options?: EventListenerOptions,
 ): CleanupFn
 export function listen(
-  el: any,
+  el: Window | Document | HTMLElement,
   type: string,
   cb: (e: any) => void,
   options?: EventListenerOptions,

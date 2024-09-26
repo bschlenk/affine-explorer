@@ -32,8 +32,8 @@ export class Canvas {
   private originScale = DEFAULT_ORIGIN_SCALE
   private matrix = spring.indirect(
     mat.IDENTITY,
-    decomposeMatrixPolar as any,
-    composeMatrixPolar as any,
+    decomposeMatrixPolar,
+    composeMatrixPolar,
   )
   private width = 0
   private height = 0

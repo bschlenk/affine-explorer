@@ -13,10 +13,12 @@ export interface SpringValue<T, U = T> {
   update(delta: number): boolean
 }
 
+const REST_DELTA = 0.01
+
 export interface SpringMaker {
   <T extends Record<string, number>>(target: T): SpringValue<T>
 
-  indirect<T, U extends Record<string, number>>(
+  indirect<T, U extends Record<string, any>>(
     target: T,
     decompose: (value: T) => U,
     compose: (value: U) => T,
@@ -51,7 +53,10 @@ export function createSpring({
           const currentValue = this.value[key]
           const velocity = velocities[i]
 
-          if (areClose(currentValue, targetValue, 0.001) && velocity < 0.001) {
+          if (
+            areClose(currentValue, targetValue, REST_DELTA) &&
+            velocity < REST_DELTA
+          ) {
             this.value[key] = targetValue
             velocities[i] = 0
             continue
@@ -66,7 +71,7 @@ export function createSpring({
             opts,
           )
 
-          this.value[key] = (targetValue + next[0]) as any
+          this.value[key] = (targetValue + next[0]) as T[keyof T]
           velocities[i] = next[1]
         }
 

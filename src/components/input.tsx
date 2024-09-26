@@ -12,7 +12,7 @@ export interface NumberInputProps {
   step?: number
   icon?: React.ReactNode
   readOnly?: boolean
-  onChange(value: number, e: InputChangeEvent): void
+  onChange: (value: number, e: InputChangeEvent) => void
 }
 
 export function NumberInput({
@@ -100,8 +100,8 @@ const fs = [f4, f3, f2]
 function format(value: number) {
   const ideal = fs.length + 3
 
-  for (let i = 0; i < fs.length; ++i) {
-    const vi = fs[i].format(value)
+  for (const f of fs) {
+    const vi = f.format(value)
     if (vi.length <= ideal) return vi
   }
 

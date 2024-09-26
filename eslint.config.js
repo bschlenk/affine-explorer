@@ -1,11 +1,13 @@
-import { fixupConfigRules, fixupPluginRules } from '@eslint/compat'
+import { fixupPluginRules } from '@eslint/compat'
 import { FlatCompat } from '@eslint/eslintrc'
 import js from '@eslint/js'
-import tsParser from '@typescript-eslint/parser'
+import tseslint from 'typescript-eslint'
 import _import from 'eslint-plugin-import'
 import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
+import prettier from 'eslint-config-prettier'
 import globals from 'globals'
 
 const compat = new FlatCompat({
@@ -18,33 +20,37 @@ export default [
   { ignores: ['**/dist/'] },
   { files: ['**/*.js', '**/*.ts', '**/*.tsx'] },
 
-  ...fixupConfigRules(
-    compat.extends(
-      'eslint:recommended',
-      'plugin:@typescript-eslint/recommended',
-      'plugin:react-hooks/recommended',
-    ),
-  ),
+  js.configs.recommended,
+
+  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
+
+  react.configs.flat.recommended,
+  react.configs.flat['jsx-runtime'],
+
+  {
+    plugins: {
+      'react-hooks': reactHooks,
+      rules: reactHooks.configs.recommended.rules,
+    },
+  },
 
   {
     plugins: {
       import: fixupPluginRules(_import),
-      react,
       'react-refresh': reactRefresh,
       'simple-import-sort': simpleImportSort,
     },
 
     languageOptions: {
-      globals: { ...globals.browser, ...globals.es2020 },
-      parser: tsParser,
+      parserOptions: { project: './tsconfig.json' },
+      globals: { ...globals.browser, ...globals.es2022 },
     },
 
     settings: { react: { version: 'detect' } },
 
     rules: {
       eqeqeq: ['error', 'smart'],
-      // handled by prettier
-      'no-extra-semi': 'off',
       'no-restricted-globals': [
         'error',
         // https://sindresorhus.com/blog/goodbye-nodejs-buffer
@@ -110,4 +116,6 @@ export default [
       ],
     },
   },
+
+  prettier,
 ]
