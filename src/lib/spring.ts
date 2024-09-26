@@ -112,10 +112,10 @@ function step(
   velocity: number,
   opts: Required<SpringOptions>,
 ) {
-  /* Spring stiffness, in kg / s^2 */
+  // Spring stiffness, in kg / s^2
   const k = -opts.stiffness
 
-  /* Damping constant, in kg / s */
+  // Damping constant, in kg / s
   const d = -opts.damping
 
   const fSpring = k * displacement
