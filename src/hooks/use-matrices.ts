@@ -10,6 +10,7 @@ interface ActionUpdate {
 interface ActionInsert {
   type: 'insert'
   value: mat.Matrix
+  after?: MatrixWithId
 }
 
 interface ActionDelete {
@@ -56,8 +57,19 @@ function reducer(matrices: MatrixWithId[], action: Action): MatrixWithId[] {
         ...matrices.slice(action.index + 1),
       ]
 
-    case 'insert':
-      return [...matrices, { id: nextId++, value: mat.round(action.value) }]
+    case 'insert': {
+      const copy = [...matrices]
+      const value = { id: nextId++, value: mat.round(action.value) }
+
+      if (action.after) {
+        const idx = copy.findIndex((m) => m.id === action.after!.id)
+        copy.splice(idx, 0, value)
+      } else {
+        copy.push(value)
+      }
+
+      return copy
+    }
 
     case 'delete': {
       const newMatrices = [

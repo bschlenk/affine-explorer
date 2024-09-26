@@ -15,6 +15,7 @@ export interface MatrixProps {
   readonly?: boolean
   setMatrix?: (matrix: mat.Matrix | null) => void
   moveMatrix?: (dir: 1 | -1) => void
+  cloneMatrix?: () => void
   onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void
   onDragEnter?: (e: React.DragEvent<HTMLDivElement>) => void
 }
@@ -24,6 +25,7 @@ export function Matrix({
   readonly,
   setMatrix,
   moveMatrix,
+  cloneMatrix,
   onDragStart,
   onDragEnter,
 }: MatrixProps) {
@@ -88,6 +90,18 @@ export function Matrix({
       </div>
       {!readonly && (
         <div className={styles.above}>
+          <button className={styles.button} onClick={cloneMatrix}>
+            c
+          </button>
+          <button
+            className={styles.button}
+            onClick={() => {
+              const mi = mat.invert(matrix)
+              if (mi) setMatrix?.(mi)
+            }}
+          >
+            i
+          </button>
           <button className={styles.button} onClick={() => moveMatrix?.(-1)}>
             ←
           </button>

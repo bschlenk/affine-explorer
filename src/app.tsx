@@ -75,6 +75,9 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
             moveMatrix={(dir) => {
               dispatch({ type: 'move', from: i, to: i + dir })
             }}
+            cloneMatrix={() => {
+              dispatch({ type: 'insert', value, after: matrices[i] })
+            }}
             onDragStart={(e) => {
               setDragging(e.target as HTMLElement)
             }}
