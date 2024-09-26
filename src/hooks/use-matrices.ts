@@ -4,13 +4,14 @@ import * as mat from '@bschlenk/mat'
 interface ActionUpdate {
   type: 'update'
   index: number
-  value: mat.Matrix
+  value?: mat.Matrix
+  visible?: boolean
 }
 
 interface ActionInsert {
   type: 'insert'
   value: mat.Matrix
-  after?: MatrixWithId
+  after?: WrappedMatrix
 }
 
 interface ActionDelete {
@@ -28,18 +29,20 @@ type Action = ActionUpdate | ActionInsert | ActionDelete | ActionMove
 
 export type UseMatricesDispatch = React.Dispatch<Action>
 
-export interface MatrixWithId {
+export interface WrappedMatrix {
   id: number
+  visible: boolean
   value: mat.Matrix
 }
 
 export function useMatrices() {
   const [matrices, dispatch] = useReducer(reducer, [], () => [
-    { id: nextId++, value: mat.IDENTITY },
+    wrapMatrix(mat.IDENTITY),
   ])
 
   const matrix = useMemo(
-    () => mat.mult(...matrices.map((m) => m.value)),
+    () =>
+      mat.mult(...matrices.map((m) => (m.visible ? m.value : mat.IDENTITY))),
     [matrices],
   )
 
@@ -48,18 +51,27 @@ export function useMatrices() {
 
 let nextId = 0
 
-function reducer(matrices: MatrixWithId[], action: Action): MatrixWithId[] {
+function wrapMatrix(value: mat.Matrix): WrappedMatrix {
+  return { id: nextId++, visible: true, value }
+}
+
+function reducer(matrices: WrappedMatrix[], action: Action): WrappedMatrix[] {
   switch (action.type) {
-    case 'update':
+    case 'update': {
+      const current = matrices[action.index]
+      const value = action.value ? mat.round(action.value) : current.value
+      const visible = action.visible ?? current.visible
+
       return [
         ...matrices.slice(0, action.index),
-        { id: matrices[action.index].id, value: mat.round(action.value) },
+        { ...current, visible, value },
         ...matrices.slice(action.index + 1),
       ]
+    }
 
     case 'insert': {
       const copy = [...matrices]
-      const value = { id: nextId++, value: mat.round(action.value) }
+      const value = wrapMatrix(mat.round(action.value))
 
       if (action.after) {
         const idx = copy.findIndex((m) => m.id === action.after!.id)
@@ -77,9 +89,7 @@ function reducer(matrices: MatrixWithId[], action: Action): MatrixWithId[] {
         ...matrices.slice(action.index + 1),
       ]
 
-      return newMatrices.length > 0 ?
-          newMatrices
-        : [{ id: nextId++, value: mat.IDENTITY }]
+      return newMatrices.length > 0 ? newMatrices : [wrapMatrix(mat.IDENTITY)]
     }
 
     case 'move': {

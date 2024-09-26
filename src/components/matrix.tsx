@@ -4,7 +4,7 @@ import { DEG2RAD, RAD2DEG } from '@bschlenk/util'
 
 import { IconRotate } from './icon-rotate'
 import { IconScale } from './icon-scale'
-import { NumberInput } from './input'
+import { InputChangeEvent, NumberInput } from './input'
 
 import styles from './matrix.module.css'
 
@@ -12,26 +12,30 @@ type MatrixElement = keyof mat.Matrix
 
 export interface MatrixProps {
   matrix: mat.Matrix
+  visible?: boolean
   readonly?: boolean
   setMatrix?: (matrix: mat.Matrix | null) => void
   moveMatrix?: (dir: 1 | -1) => void
   cloneMatrix?: () => void
+  toggleMatrix?: () => void
   onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void
   onDragEnter?: (e: React.DragEvent<HTMLDivElement>) => void
 }
 
 export function Matrix({
   matrix,
+  visible,
   readonly,
   setMatrix,
   moveMatrix,
   cloneMatrix,
+  toggleMatrix,
   onDragStart,
   onDragEnter,
 }: MatrixProps) {
   const onChange = useCallback(
-    (value: number, e: React.ChangeEvent<HTMLInputElement>) => {
-      const name = e.target.name as MatrixElement
+    (value: number, e: InputChangeEvent) => {
+      const name = e.currentTarget.name as MatrixElement
       setMatrix?.({ ...matrix, [name]: value })
     },
     [matrix, setMatrix],
@@ -90,6 +94,9 @@ export function Matrix({
       </div>
       {!readonly && (
         <div className={styles.above}>
+          <button className={styles.button} onClick={toggleMatrix}>
+            {visible ? 'T' : 't'}
+          </button>
           <button className={styles.button} onClick={cloneMatrix}>
             c
           </button>

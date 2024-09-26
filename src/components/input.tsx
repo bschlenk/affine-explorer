@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 
 import styles from './input.module.css'
 
-type InputChangeEvent =
+export type InputChangeEvent =
   | React.ChangeEvent<HTMLInputElement>
   | React.KeyboardEvent<HTMLInputElement>
 

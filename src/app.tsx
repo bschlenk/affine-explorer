@@ -4,9 +4,9 @@ import * as mat from '@bschlenk/mat'
 import { Canvas } from './canvas'
 import { Matrix } from './components/matrix'
 import {
-  MatrixWithId,
   useMatrices,
   UseMatricesDispatch,
+  WrappedMatrix,
 } from './hooks/use-matrices'
 import { childIndex } from './lib/dom'
 import { setRef } from './lib/set-ref'
@@ -50,7 +50,7 @@ function Display({ matrix }: DisplayProps) {
 }
 
 interface MatrixControlsProps {
-  matrices: MatrixWithId[]
+  matrices: WrappedMatrix[]
   matrix: mat.Matrix
   dispatch: UseMatricesDispatch
 }
@@ -61,10 +61,14 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
   return (
     <div className={styles.controls}>
       <div className={styles.section}>
-        {matrices.map(({ id, value }, i) => (
+        {matrices.map(({ id, visible, value }, i) => (
           <Matrix
             key={id}
             matrix={value}
+            visible={visible}
+            toggleMatrix={() => {
+              dispatch({ type: 'update', index: i, visible: !visible })
+            }}
             setMatrix={(value) => {
               if (value) {
                 dispatch({ type: 'update', index: i, value })
