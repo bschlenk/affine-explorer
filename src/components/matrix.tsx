@@ -86,7 +86,6 @@ export function Matrix({
           }}
         />
       </div>
-      <div className={styles.footer}></div>
       {!readonly && (
         <div className={styles.above}>
           <button className={styles.button} onClick={() => moveMatrix?.(-1)}>
