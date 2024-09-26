@@ -37,6 +37,7 @@ export class Canvas {
   )
   private width = 0
   private height = 0
+  private fontsReady = false
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!
@@ -125,6 +126,11 @@ export class Canvas {
 
     setupOriginScaleListener(canvas, (update) => {
       this.originScale = update(this.originScale)
+      this.invalidate()
+    })
+
+    void document.fonts.ready.then(() => {
+      this.fontsReady = true
       this.invalidate()
     })
   }
@@ -359,13 +365,15 @@ export class Canvas {
     ctx.stroke()
     ctx.restore()
 
-    ctx.fillStyle = '#ccc'
-    const m = this.measureText('R')
-    ctx.fillText(
-      'R',
-      x + width / 2 - m.width / 2,
-      y + height / 2 + m.actualBoundingBoxAscent / 2,
-    )
+    if (this.fontsReady) {
+      ctx.fillStyle = '#ccc'
+      const m = this.measureText('R')
+      ctx.fillText(
+        'R',
+        x + width / 2 - m.width / 2,
+        y + height / 2 + m.actualBoundingBoxAscent / 2,
+      )
+    }
 
     ctx.restore()
   }
