@@ -43,7 +43,7 @@ export function Matrix({
 
   const rot = mat.getRotation(matrix)
   const rotDeg = rot * RAD2DEG
-  const scale = Math.sqrt(matrix.xx ** 2 + matrix.xy ** 2)
+  const scale = Math.hypot(matrix.xx, matrix.xy)
 
   return (
     <div
