@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@bschlenk/mat':
-        specifier: ^0.0.10
-        version: 0.0.10
+        specifier: ^0.0.11
+        version: 0.0.11
       '@bschlenk/util':
         specifier: ^0.0.2
         version: 0.0.2
@@ -143,8 +143,8 @@ packages:
     peerDependencies:
       eslint: '>= 9'
 
-  '@bschlenk/mat@0.0.10':
-    resolution: {integrity: sha512-9h1zg0va7zYQJ+qHIeb3DwCKe051xjrPYIWGUBFF0Ke5+dv7ZMA2Ru75wLE3QT3WXusWXOzHecv60j7ty1foag==}
+  '@bschlenk/mat@0.0.11':
+    resolution: {integrity: sha512-k+6o4oLSUMQYxt4ep0Qwd3xpV8LfHU2oFrmUF1UV5AHMd6HGISYXJScY1ImviA+Com7ASEL9dsXXck2s1P748w==}
 
   '@bschlenk/util@0.0.2':
     resolution: {integrity: sha512-/HGXuwaYEke3aQOamgh3DsaGKMNin0qPGW1WI9h8qsAG3cFRQsYsF2Qz1+jt76a8QyfD+7JKI5AUwXD1G4mNKw==}
@@ -1669,7 +1669,7 @@ snapshots:
       - supports-color
       - typescript
 
-  '@bschlenk/mat@0.0.10':
+  '@bschlenk/mat@0.0.11':
     dependencies:
       '@bschlenk/util': 0.0.2
       '@bschlenk/vec': 0.0.7
