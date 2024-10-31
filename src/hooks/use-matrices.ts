@@ -42,7 +42,9 @@ export function useMatrices() {
 
   const matrix = useMemo(
     () =>
-      mat.mult(...matrices.map((m) => (m.visible ? m.value : mat.IDENTITY))),
+      clean(
+        mat.mult(...matrices.map((m) => (m.visible ? m.value : mat.IDENTITY))),
+      ),
     [matrices],
   )
 
@@ -59,7 +61,7 @@ function reducer(matrices: WrappedMatrix[], action: Action): WrappedMatrix[] {
   switch (action.type) {
     case 'update': {
       const current = matrices[action.index]
-      const value = action.value ? mat.round(action.value) : current.value
+      const value = action.value ? clean(action.value) : current.value
       const visible = action.visible ?? current.visible
 
       return [
@@ -71,7 +73,7 @@ function reducer(matrices: WrappedMatrix[], action: Action): WrappedMatrix[] {
 
     case 'insert': {
       const copy = [...matrices]
-      const value = wrapMatrix(mat.round(action.value))
+      const value = wrapMatrix(clean(action.value))
 
       if (action.after) {
         const idx = copy.findIndex((m) => m.id === action.after!.id)
@@ -103,4 +105,8 @@ function reducer(matrices: WrappedMatrix[], action: Action): WrappedMatrix[] {
       return newMatrices
     }
   }
+}
+
+function clean(m: mat.Matrix) {
+  return mat.fixNegativeZeros(mat.round(m))
 }
