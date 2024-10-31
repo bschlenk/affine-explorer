@@ -91,7 +91,7 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
               const from = childIndex(dragging!)
               const to = childIndex(e.target as HTMLElement)
 
-              dispatch({ type: 'move', from: from, to: to })
+              dispatch({ type: 'move', from, to })
             }}
           />
         ))}

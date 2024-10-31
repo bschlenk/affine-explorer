@@ -19,6 +19,8 @@ export default [
     },
 
     rules: {
+      'object-shorthand': ['error', 'always'],
+
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
