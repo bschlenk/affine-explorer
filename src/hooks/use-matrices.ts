@@ -1,11 +1,14 @@
-import { useMemo, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as mat from '@bschlenk/mat'
+
+import { useHistory } from './use-history'
 
 interface ActionUpdate {
   type: 'update'
   index: number
   value?: mat.Matrix
   visible?: boolean
+  skipHistory?: boolean
 }
 
 interface ActionInsert {
@@ -36,19 +39,85 @@ export interface WrappedMatrix {
 }
 
 export function useMatrices() {
-  const [matrices, dispatch] = useReducer(reducer, [], () => [
-    wrapMatrix(mat.IDENTITY),
-  ])
+  // Create initial state once
+  const initialMatrices = useRef<WrappedMatrix[]>([wrapMatrix(mat.IDENTITY)])
+
+  const {
+    state: historyState,
+    setState: setHistoryState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useHistory({
+    initialState: initialMatrices.current,
+  })
+
+  // Use a separate display state for immediate feedback during skipHistory updates
+  const [displayState, setDisplayState] = useState<WrappedMatrix[]>(
+    initialMatrices.current,
+  )
+
+  // Track pending input changes to batch them
+  const pendingInputChangeRef = useRef<WrappedMatrix[] | null>(null)
+
+  // Sync display state with history state when history changes (undo/redo)
+  useEffect(() => {
+    if (!pendingInputChangeRef.current) {
+      setDisplayState(historyState)
+    }
+  }, [historyState])
+
+  const dispatch = useCallback(
+    (action: Action) => {
+      const newState = reducer(displayState, action)
+
+      // Always update display state for immediate visual feedback
+      setDisplayState(newState)
+
+      // For input updates, we batch changes and only commit to history on blur
+      if (action.type === 'update' && action.skipHistory) {
+        pendingInputChangeRef.current = newState
+      } else {
+        // Clear any pending changes and commit to history
+        pendingInputChangeRef.current = null
+        setHistoryState(newState)
+      }
+    },
+    [displayState, setHistoryState],
+  )
+
+  const undoCallback = useCallback(() => {
+    // Clear any pending input changes when undoing
+    pendingInputChangeRef.current = null
+    undo()
+  }, [undo])
+
+  const redoCallback = useCallback(() => {
+    // Clear any pending input changes when redoing
+    pendingInputChangeRef.current = null
+    redo()
+  }, [redo])
 
   const matrix = useMemo(
     () =>
       clean(
-        mat.mult(...matrices.map((m) => (m.visible ? m.value : mat.IDENTITY))),
+        mat.mult(
+          ...displayState.map((m) => (m.visible ? m.value : mat.IDENTITY)),
+        ),
       ),
-    [matrices],
+    [displayState],
   )
 
-  return { matrices, matrix, dispatch }
+  return {
+    matrices: displayState,
+    matrix,
+    dispatch,
+    undo: undoCallback,
+    redo: redoCallback,
+    canUndo,
+    canRedo,
+  }
 }
 
 let nextId = 0

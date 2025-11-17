@@ -3,6 +3,7 @@ import * as mat from '@bschlenk/mat'
 
 import { Canvas } from './canvas'
 import { Matrix } from './components/matrix'
+import { useInputFocus } from './hooks/use-input-focus'
 import {
   useMatrices,
   UseMatricesDispatch,
@@ -15,6 +16,30 @@ import styles from './app.module.css'
 
 export function App() {
   const values = useMatrices()
+  const hasInputFocus = useInputFocus()
+
+  // Add keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger undo/redo if an input has focus
+      if (hasInputFocus) return
+
+      // Support both Ctrl (Windows/Linux) and Cmd (Mac) modifiers
+      const isModifierPressed = e.metaKey || e.ctrlKey
+
+      if (isModifierPressed && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          values.redo()
+        } else {
+          values.undo()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [hasInputFocus, values])
 
   return (
     <>
@@ -69,9 +94,9 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
             toggleMatrix={() => {
               dispatch({ type: 'update', index: i, visible: !visible })
             }}
-            setMatrix={(value) => {
+            setMatrix={(value, skipHistory) => {
               if (value) {
-                dispatch({ type: 'update', index: i, value })
+                dispatch({ type: 'update', index: i, value, skipHistory })
               } else {
                 dispatch({ type: 'delete', index: i })
               }

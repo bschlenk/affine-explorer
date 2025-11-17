@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 import styles from './input.module.css'
 
@@ -12,7 +12,7 @@ export interface NumberInputProps {
   step?: number
   icon?: React.ReactNode
   readOnly?: boolean
-  onChange: (value: number, e: InputChangeEvent) => void
+  onChange: (value: number, e: InputChangeEvent, skipHistory?: boolean) => void
 }
 
 export function NumberInput({
@@ -24,6 +24,7 @@ export function NumberInput({
   onChange,
 }: NumberInputProps) {
   const ref = useRef<HTMLInputElement>(null)
+  const [hasFocus, setHasFocus] = useState(false)
 
   useLayoutEffect(() => {
     if (ref.current) {
@@ -41,10 +42,14 @@ export function NumberInput({
         name={name}
         step={step}
         readOnly={readOnly}
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          e.target.select()
+          setHasFocus(true)
+        }}
         onBlur={(e) => {
           const value = +e.target.value
-          onChange(value, e)
+          onChange(value, e, false) // Commit to history on blur
+          setHasFocus(false)
         }}
         onKeyDown={(e) => {
           const t = e.target as HTMLInputElement
@@ -52,16 +57,16 @@ export function NumberInput({
 
           switch (e.key) {
             case 'ArrowUp':
-              onChange(value + s, e)
+              onChange(value + s, e, hasFocus) // Skip history while focused
               break
 
             case 'ArrowDown':
-              onChange(value - s, e)
+              onChange(value - s, e, hasFocus) // Skip history while focused
               break
 
             case 'Enter': {
               const value = +t.value
-              onChange(value, e)
+              onChange(value, e, false) // Commit to history on Enter
               t.select()
               break
             }
