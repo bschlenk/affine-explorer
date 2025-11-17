@@ -38,6 +38,7 @@ export class Canvas {
   private width = 0
   private height = 0
   private fontsReady = false
+  private customImage: HTMLImageElement | null = null
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!
@@ -60,6 +61,19 @@ export class Canvas {
 
     iv.xa = correctAngle(iv.xa, v.xa)
     iv.ya = correctAngle(iv.ya, v.ya)
+  }
+
+  public setCustomImage(dataUrl: string) {
+    const img = new Image()
+    img.onload = () => {
+      this.customImage = img
+      this.invalidate()
+    }
+    img.onerror = () => {
+      console.error('Failed to load image')
+      this.customImage = null
+    }
+    img.src = dataUrl
   }
 
   private invalidate() {
@@ -132,6 +146,21 @@ export class Canvas {
     void document.fonts.ready.then(() => {
       this.fontsReady = true
       this.invalidate()
+    })
+
+    // Add paste event listener
+    window.addEventListener('paste', (e) => {
+      this.handlePaste(e)
+    })
+
+    // Add drag and drop event listeners
+    canvas.addEventListener('dragover', (e) => {
+      e.preventDefault()
+    })
+
+    canvas.addEventListener('drop', (e) => {
+      e.preventDefault()
+      this.handleDrop(e)
     })
   }
 
@@ -365,7 +394,11 @@ export class Canvas {
     ctx.stroke()
     ctx.restore()
 
-    if (this.fontsReady) {
+    if (this.customImage) {
+      // Draw the custom image to fill the rectangle
+      ctx.drawImage(this.customImage, x, y, width, height)
+    } else if (this.fontsReady) {
+      // Draw the default "R" text
       ctx.fillStyle = '#ccc'
       const m = this.measureText('R')
       ctx.fillText(
@@ -400,5 +433,42 @@ export class Canvas {
       this._measuredText.set(str, val)
     }
     return val
+  }
+
+  private handlePaste(e: ClipboardEvent) {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (const item of items) {
+      // Handle image files
+      if (item.type.includes('image')) {
+        const file = item.getAsFile()
+        if (file) {
+          this.loadImageFromFile(file)
+        }
+        return
+      }
+    }
+  }
+
+  private handleDrop(e: DragEvent) {
+    const files = e.dataTransfer?.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    if (file.type.includes('image') || file.type === 'image/svg+xml') {
+      this.loadImageFromFile(file)
+    }
+  }
+
+  private loadImageFromFile(file: File) {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      if (dataUrl) {
+        this.setCustomImage(dataUrl)
+      }
+    }
+    reader.readAsDataURL(file)
   }
 }
