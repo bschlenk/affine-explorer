@@ -9,8 +9,11 @@ import {
   WrappedMatrix,
 } from './hooks/use-matrices'
 import { setRef } from './lib/set-ref'
+import { createSpring } from './lib/spring'
 
 import styles from './app.module.css'
+
+const spring = createSpring({ stiffness: 170, damping: 26 })
 
 export function App() {
   const values = useMatrices()
@@ -57,6 +60,8 @@ interface MatrixControlsProps {
 function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
 
   const handleReorder = useCallback(
     (fromIndex: number, toIndex: number) => {
@@ -90,6 +95,12 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
 
           setIsAnimating(true)
 
+          // Set up spring animations for each element
+          const springs = new Map<
+            Element,
+            ReturnType<typeof spring<{ x: number; y: number }>>
+          >()
+
           newMatrixElements.forEach((el) => {
             const id = el.getAttribute('data-matrix-id')
             if (!id) return
@@ -102,35 +113,58 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
               const deltaY = oldPos.top - newPos.top
 
               if (deltaX !== 0 || deltaY !== 0) {
-                const element = el as HTMLElement
-                // Set initial position (where it was)
-                element.style.transform = `translate(${deltaX}px, ${deltaY}px)`
-                element.style.transition = 'none'
-
-                // Force a reflow
-                void element.offsetHeight
-
-                // Animate to final position
-                element.style.transition = 'transform 0.3s ease-out'
-                element.style.transform = 'translate(0, 0)'
+                const s = spring({ x: deltaX, y: deltaY })
+                springs.set(el, s)
+                s.set({ x: 0, y: 0 })
               }
             }
           })
 
-          // Clean up after animation
-          setTimeout(() => {
-            newMatrixElements.forEach((el) => {
-              const element = el as HTMLElement
-              element.style.transform = ''
-              element.style.transition = ''
+          // Animate using spring physics
+          let lastTime = performance.now()
+          const animate = (currentTime: number) => {
+            const delta = currentTime - lastTime
+            lastTime = currentTime
+
+            let anyActive = false
+
+            springs.forEach((s, el) => {
+              const active = s.update(delta)
+              if (active) {
+                anyActive = true
+                const element = el as HTMLElement
+                element.style.transform = `translate(${s.value.x}px, ${s.value.y}px)`
+              }
             })
-            setIsAnimating(false)
-          }, 300)
+
+            if (anyActive) {
+              animationFrameRef.current = requestAnimationFrame(animate)
+            } else {
+              // Clean up after animation
+              springs.forEach((_, el) => {
+                const element = el as HTMLElement
+                element.style.transform = ''
+              })
+              setIsAnimating(false)
+              animationFrameRef.current = null
+            }
+          }
+
+          animationFrameRef.current = requestAnimationFrame(animate)
         })
       })
     },
     [dispatch],
   )
+
+  // Clean up animation frame on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [])
 
   return (
     <div className={styles.controls}>
@@ -160,8 +194,18 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
               dispatch({ type: 'insert', value, after: matrices[i] })
             }}
             onReorder={handleReorder}
+            onDragEnter={() => setInsertionIndex(i)}
+            onDragLeave={() => setInsertionIndex(null)}
           />
         ))}
+        {insertionIndex !== null && (
+          <div
+            className={styles.insertionIndicator}
+            style={{
+              left: `${insertionIndex * (240 + 8)}px`,
+            }}
+          />
+        )}
         <button
           className={styles.button}
           onClick={() => dispatch({ type: 'insert', value: mat.IDENTITY })}

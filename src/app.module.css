@@ -17,10 +17,22 @@
 }
 
 .section {
+  position: relative;
   display: flex;
   gap: 8px;
   align-items: center;
   pointer-events: auto;
+}
+
+.insertionIndicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #3b82f6;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
 }
 
 .button {

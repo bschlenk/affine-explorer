@@ -26,6 +26,8 @@ export interface MatrixProps {
   matrixId?: number
   isAnimating?: boolean
   onReorder?: (fromIndex: number, toIndex: number) => void
+  onDragEnter?: () => void
+  onDragLeave?: () => void
 }
 
 export function Matrix({
@@ -40,10 +42,11 @@ export function Matrix({
   matrixId,
   isAnimating,
   onReorder,
+  onDragEnter,
+  onDragLeave,
 }: MatrixProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
-  const [isDraggedOver, setIsDraggedOver] = useState(false)
 
   const onChange = useCallback(
     (value: number, e: InputChangeEvent) => {
@@ -76,19 +79,21 @@ export function Matrix({
       onDragEnter: ({ source }) => {
         const sourceIndex = source.data.index
         if (typeof sourceIndex === 'number' && sourceIndex !== index) {
-          setIsDraggedOver(true)
+          onDragEnter?.()
         }
       },
-      onDragLeave: () => setIsDraggedOver(false),
+      onDragLeave: () => {
+        onDragLeave?.()
+      },
       onDrop: ({ source }) => {
-        setIsDraggedOver(false)
+        onDragLeave?.()
         const sourceIndex = source.data.index
         if (typeof sourceIndex === 'number' && typeof index === 'number') {
           onReorder?.(sourceIndex, index)
         }
       },
     })
-  }, [index, readonly, onReorder])
+  }, [index, readonly, onReorder, onDragEnter, onDragLeave])
 
   const rot = mat.getRotation(matrix)
   const rotDeg = rot * RAD2DEG
@@ -98,7 +103,7 @@ export function Matrix({
     <div
       ref={ref}
       data-matrix-id={matrixId}
-      className={`${styles.root} ${isDragging ? styles.dragging : ''} ${isDraggedOver ? styles.draggedOver : ''} ${isAnimating ? styles.animating : ''}`}
+      className={`${styles.root} ${isDragging ? styles.dragging : ''} ${isAnimating ? styles.animating : ''}`}
     >
       <div className={styles.values}>
         {(Object.keys(matrix) as MatrixElement[]).map((key) => (
