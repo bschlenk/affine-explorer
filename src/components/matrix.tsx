@@ -2,8 +2,11 @@ import { useCallback } from 'react'
 import * as mat from '@bschlenk/mat'
 import { DEG2RAD, RAD2DEG } from '@bschlenk/util'
 
+import { IconClone } from './icon-clone'
+import { IconInvert } from './icon-invert'
 import { IconRotate } from './icon-rotate'
 import { IconScale } from './icon-scale'
+import { IconVisibility } from './icon-visibility'
 import { InputChangeEvent, NumberInput } from './input'
 
 import styles from './matrix.module.css'
@@ -94,11 +97,19 @@ export function Matrix({
       </div>
       {!readonly && (
         <div className={styles.above}>
-          <button className={styles.button} onClick={toggleMatrix}>
-            {visible ? 'T' : 't'}
+          <button
+            className={styles.button}
+            onClick={toggleMatrix}
+            title={visible ? 'Hide matrix' : 'Show matrix'}
+          >
+            <IconVisibility />
           </button>
-          <button className={styles.button} onClick={cloneMatrix}>
-            c
+          <button
+            className={styles.button}
+            onClick={cloneMatrix}
+            title="Clone matrix"
+          >
+            <IconClone />
           </button>
           <button
             className={styles.button}
@@ -106,16 +117,29 @@ export function Matrix({
               const mi = mat.invert(matrix)
               if (mi) setMatrix?.(mi)
             }}
+            title="Invert matrix"
           >
-            i
+            <IconInvert />
           </button>
-          <button className={styles.button} onClick={() => moveMatrix?.(-1)}>
+          <button
+            className={styles.button}
+            onClick={() => moveMatrix?.(-1)}
+            title="Move matrix left"
+          >
             ←
           </button>
-          <button className={styles.button} onClick={() => moveMatrix?.(1)}>
+          <button
+            className={styles.button}
+            onClick={() => moveMatrix?.(1)}
+            title="Move matrix right"
+          >
             →
           </button>
-          <button className={styles.button} onClick={() => setMatrix?.(null)}>
+          <button
+            className={styles.button}
+            onClick={() => setMatrix?.(null)}
+            title="Delete matrix"
+          >
             ✕
           </button>
         </div>
