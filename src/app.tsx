@@ -24,10 +24,10 @@ export function App() {
       // Don't trigger undo/redo if an input has focus
       if (hasInputFocus) return
 
-      const isMac = navigator.platform.toUpperCase().includes('MAC')
-      const isCtrlOrCmd = isMac ? e.metaKey : e.ctrlKey
+      // Support both Ctrl (Windows/Linux) and Cmd (Mac) modifiers
+      const isModifierPressed = e.metaKey || e.ctrlKey
 
-      if (isCtrlOrCmd && e.key === 'z') {
+      if (isModifierPressed && e.key === 'z') {
         e.preventDefault()
         if (e.shiftKey) {
           values.redo()
