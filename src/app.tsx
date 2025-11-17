@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import * as mat from '@bschlenk/mat'
 
 import { Canvas } from './canvas'
@@ -8,7 +8,6 @@ import {
   UseMatricesDispatch,
   WrappedMatrix,
 } from './hooks/use-matrices'
-import { childIndex } from './lib/dom'
 import { setRef } from './lib/set-ref'
 
 import styles from './app.module.css'
@@ -56,7 +55,9 @@ interface MatrixControlsProps {
 }
 
 function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
-  const [dragging, setDragging] = useState<HTMLElement | null>(null)
+  const handleReorder = (fromIndex: number, toIndex: number) => {
+    dispatch({ type: 'move', from: fromIndex, to: toIndex })
+  }
 
   return (
     <div className={styles.controls}>
@@ -64,6 +65,7 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
         {matrices.map(({ id, visible, value }, i) => (
           <Matrix
             key={id}
+            index={i}
             matrix={value}
             visible={visible}
             toggleMatrix={() => {
@@ -82,17 +84,7 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
             cloneMatrix={() => {
               dispatch({ type: 'insert', value, after: matrices[i] })
             }}
-            onDragStart={(e) => {
-              setDragging(e.target as HTMLElement)
-            }}
-            onDragEnter={(e) => {
-              if (e.target !== e.currentTarget) return
-
-              const from = childIndex(dragging!)
-              const to = childIndex(e.target as HTMLElement)
-
-              dispatch({ type: 'move', from, to })
-            }}
+            onReorder={handleReorder}
           />
         ))}
         <button
