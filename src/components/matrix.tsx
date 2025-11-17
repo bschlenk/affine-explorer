@@ -14,7 +14,7 @@ export interface MatrixProps {
   matrix: mat.Matrix
   visible?: boolean
   readonly?: boolean
-  setMatrix?: (matrix: mat.Matrix | null) => void
+  setMatrix?: (matrix: mat.Matrix | null, skipHistory?: boolean) => void
   moveMatrix?: (dir: 1 | -1) => void
   cloneMatrix?: () => void
   toggleMatrix?: () => void
@@ -34,9 +34,9 @@ export function Matrix({
   onDragEnter,
 }: MatrixProps) {
   const onChange = useCallback(
-    (value: number, e: InputChangeEvent) => {
+    (value: number, e: InputChangeEvent, skipHistory?: boolean) => {
       const name = e.currentTarget.name as MatrixElement
-      setMatrix?.({ ...matrix, [name]: value })
+      setMatrix?.({ ...matrix, [name]: value }, skipHistory)
     },
     [matrix, setMatrix],
   )
@@ -68,9 +68,9 @@ export function Matrix({
           value={rotDeg}
           readOnly={readonly}
           icon={<IconRotate />}
-          onChange={(value) => {
+          onChange={(value, _e, skipHistory) => {
             const newRot = value * DEG2RAD
-            setMatrix?.(mat.mult(matrix, mat.rotate(newRot - rot)))
+            setMatrix?.(mat.mult(matrix, mat.rotate(newRot - rot)), skipHistory)
           }}
         />
         <NumberInput
@@ -78,7 +78,7 @@ export function Matrix({
           value={scale}
           readOnly={readonly}
           icon={<IconScale />}
-          onChange={(value) => {
+          onChange={(value, _e, skipHistory) => {
             let m = mat.mult(
               matrix,
               mat.scale(value / matrix.xx, value / matrix.yy),
@@ -88,7 +88,7 @@ export function Matrix({
               m = mat.scale(value)
             }
 
-            setMatrix?.(m)
+            setMatrix?.(m, skipHistory)
           }}
         />
       </div>

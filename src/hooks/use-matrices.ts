@@ -1,11 +1,14 @@
-import { useMemo, useReducer } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import * as mat from '@bschlenk/mat'
+
+import { useHistory } from './use-history'
 
 interface ActionUpdate {
   type: 'update'
   index: number
   value?: mat.Matrix
   visible?: boolean
+  skipHistory?: boolean
 }
 
 interface ActionInsert {
@@ -25,7 +28,17 @@ interface ActionMove {
   to: number
 }
 
-type Action = ActionUpdate | ActionInsert | ActionDelete | ActionMove
+interface ActionSetState {
+  type: 'set-state'
+  matrices: WrappedMatrix[]
+}
+
+type Action =
+  | ActionUpdate
+  | ActionInsert
+  | ActionDelete
+  | ActionMove
+  | ActionSetState
 
 export type UseMatricesDispatch = React.Dispatch<Action>
 
@@ -36,9 +49,67 @@ export interface WrappedMatrix {
 }
 
 export function useMatrices() {
-  const [matrices, dispatch] = useReducer(reducer, [], () => [
+  const [matrices, dispatchInternal] = useReducer(reducer, [], () => [
     wrapMatrix(mat.IDENTITY),
   ])
+
+  const {
+    state: historyState,
+    setState: setHistoryState,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useHistory({
+    initialState: [wrapMatrix(mat.IDENTITY)],
+  })
+
+  // Track pending input changes to batch them
+  const pendingInputChangeRef = useRef<WrappedMatrix[] | null>(null)
+
+  // Sync history state back to local state when undo/redo happens
+  useEffect(() => {
+    dispatchInternal({ type: 'set-state', matrices: historyState })
+  }, [historyState])
+
+  const dispatch = useCallback(
+    (action: Action) => {
+      const newState = reducer(matrices, action)
+      dispatchInternal(action)
+
+      // For input updates, we batch changes and only commit to history on blur
+      if (action.type === 'update' && action.skipHistory) {
+        pendingInputChangeRef.current = newState
+      } else {
+        // If there was a pending input change, commit it first
+        if (pendingInputChangeRef.current) {
+          setHistoryState(pendingInputChangeRef.current)
+          pendingInputChangeRef.current = null
+        }
+        // Commit this action to history
+        setHistoryState(newState)
+      }
+    },
+    [matrices, setHistoryState],
+  )
+
+  const undoCallback = useCallback(() => {
+    // Commit any pending input changes before undoing
+    if (pendingInputChangeRef.current) {
+      setHistoryState(pendingInputChangeRef.current)
+      pendingInputChangeRef.current = null
+    }
+    undo()
+  }, [undo, setHistoryState])
+
+  const redoCallback = useCallback(() => {
+    // Commit any pending input changes before redoing
+    if (pendingInputChangeRef.current) {
+      setHistoryState(pendingInputChangeRef.current)
+      pendingInputChangeRef.current = null
+    }
+    redo()
+  }, [redo, setHistoryState])
 
   const matrix = useMemo(
     () =>
@@ -48,7 +119,15 @@ export function useMatrices() {
     [matrices],
   )
 
-  return { matrices, matrix, dispatch }
+  return {
+    matrices,
+    matrix,
+    dispatch,
+    undo: undoCallback,
+    redo: redoCallback,
+    canUndo,
+    canRedo,
+  }
 }
 
 let nextId = 0
@@ -103,6 +182,10 @@ function reducer(matrices: WrappedMatrix[], action: Action): WrappedMatrix[] {
       newMatrices[from] = newMatrices[to]
       newMatrices[to] = temp
       return newMatrices
+    }
+
+    case 'set-state': {
+      return action.matrices
     }
   }
 }
