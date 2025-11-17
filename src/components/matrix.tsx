@@ -23,6 +23,8 @@ export interface MatrixProps {
   cloneMatrix?: () => void
   toggleMatrix?: () => void
   index?: number
+  matrixId?: number
+  isAnimating?: boolean
   onReorder?: (fromIndex: number, toIndex: number) => void
 }
 
@@ -35,6 +37,8 @@ export function Matrix({
   cloneMatrix,
   toggleMatrix,
   index,
+  matrixId,
+  isAnimating,
   onReorder,
 }: MatrixProps) {
   const ref = useRef<HTMLDivElement>(null)
@@ -93,7 +97,8 @@ export function Matrix({
   return (
     <div
       ref={ref}
-      className={`${styles.root} ${isDragging ? styles.dragging : ''} ${isDraggedOver ? styles.draggedOver : ''}`}
+      data-matrix-id={matrixId}
+      className={`${styles.root} ${isDragging ? styles.dragging : ''} ${isDraggedOver ? styles.draggedOver : ''} ${isAnimating ? styles.animating : ''}`}
     >
       <div className={styles.values}>
         {(Object.keys(matrix) as MatrixElement[]).map((key) => (

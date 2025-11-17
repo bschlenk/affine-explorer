@@ -12,6 +12,10 @@
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+.root.animating {
+  pointer-events: none;
+}
+
 .root.dragging {
   opacity: 0.5;
   cursor: grabbing;

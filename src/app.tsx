@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as mat from '@bschlenk/mat'
 
 import { Canvas } from './canvas'
@@ -55,19 +55,94 @@ interface MatrixControlsProps {
 }
 
 function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
-  const handleReorder = (fromIndex: number, toIndex: number) => {
-    dispatch({ type: 'move', from: fromIndex, to: toIndex })
-  }
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  const handleReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
+
+      // Capture positions before reorder
+      const container = containerRef.current
+      if (!container) return
+
+      const matrixElements = Array.from(
+        container.querySelectorAll('[data-matrix-id]'),
+      )
+      const oldPositions = new Map<string, DOMRect>()
+
+      matrixElements.forEach((el) => {
+        const id = el.getAttribute('data-matrix-id')
+        if (id) {
+          oldPositions.set(id, el.getBoundingClientRect())
+        }
+      })
+
+      // Perform the reorder
+      dispatch({ type: 'move', from: fromIndex, to: toIndex })
+
+      // Wait for React to update the DOM
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const newMatrixElements = Array.from(
+            container.querySelectorAll('[data-matrix-id]'),
+          )
+
+          setIsAnimating(true)
+
+          newMatrixElements.forEach((el) => {
+            const id = el.getAttribute('data-matrix-id')
+            if (!id) return
+
+            const oldPos = oldPositions.get(id)
+            const newPos = el.getBoundingClientRect()
+
+            if (oldPos && newPos) {
+              const deltaX = oldPos.left - newPos.left
+              const deltaY = oldPos.top - newPos.top
+
+              if (deltaX !== 0 || deltaY !== 0) {
+                const element = el as HTMLElement
+                // Set initial position (where it was)
+                element.style.transform = `translate(${deltaX}px, ${deltaY}px)`
+                element.style.transition = 'none'
+
+                // Force a reflow
+                void element.offsetHeight
+
+                // Animate to final position
+                element.style.transition = 'transform 0.3s ease-out'
+                element.style.transform = 'translate(0, 0)'
+              }
+            }
+          })
+
+          // Clean up after animation
+          setTimeout(() => {
+            newMatrixElements.forEach((el) => {
+              const element = el as HTMLElement
+              element.style.transform = ''
+              element.style.transition = ''
+            })
+            setIsAnimating(false)
+          }, 300)
+        })
+      })
+    },
+    [dispatch],
+  )
 
   return (
     <div className={styles.controls}>
-      <div className={styles.section}>
+      <div ref={containerRef} className={styles.section}>
         {matrices.map(({ id, visible, value }, i) => (
           <Matrix
             key={id}
             index={i}
+            matrixId={id}
             matrix={value}
             visible={visible}
+            isAnimating={isAnimating}
             toggleMatrix={() => {
               dispatch({ type: 'update', index: i, visible: !visible })
             }}
