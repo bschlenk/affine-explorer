@@ -1,4 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  draggable,
+  dropTargetForElements,
+} from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import * as mat from '@bschlenk/mat'
 import { DEG2RAD, RAD2DEG } from '@bschlenk/util'
 
@@ -18,8 +22,12 @@ export interface MatrixProps {
   moveMatrix?: (dir: 1 | -1) => void
   cloneMatrix?: () => void
   toggleMatrix?: () => void
-  onDragStart?: (e: React.DragEvent<HTMLDivElement>) => void
-  onDragEnter?: (e: React.DragEvent<HTMLDivElement>) => void
+  index?: number
+  matrixId?: number
+  isAnimating?: boolean
+  onReorder?: (fromIndex: number, toIndex: number) => void
+  onDragEnter?: (fromIndex: number) => void
+  onDragLeave?: () => void
 }
 
 export function Matrix({
@@ -30,9 +38,16 @@ export function Matrix({
   moveMatrix,
   cloneMatrix,
   toggleMatrix,
-  onDragStart,
+  index,
+  matrixId,
+  isAnimating,
+  onReorder,
   onDragEnter,
+  onDragLeave,
 }: MatrixProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [isDragging, setIsDragging] = useState(false)
+
   const onChange = useCallback(
     (value: number, e: InputChangeEvent) => {
       const name = e.currentTarget.name as MatrixElement
@@ -41,16 +56,54 @@ export function Matrix({
     [matrix, setMatrix],
   )
 
+  // Set up draggable behavior
+  useEffect(() => {
+    const element = ref.current
+    if (!element || readonly) return
+
+    return draggable({
+      element,
+      getInitialData: () => ({ index }),
+      onDragStart: () => setIsDragging(true),
+      onDrop: () => setIsDragging(false),
+    })
+  }, [index, readonly])
+
+  // Set up drop target behavior
+  useEffect(() => {
+    const element = ref.current
+    if (!element || readonly) return
+
+    return dropTargetForElements({
+      element,
+      onDragEnter: ({ source }) => {
+        const sourceIndex = source.data.index
+        if (typeof sourceIndex === 'number' && sourceIndex !== index) {
+          onDragEnter?.(sourceIndex)
+        }
+      },
+      onDragLeave: () => {
+        onDragLeave?.()
+      },
+      onDrop: ({ source }) => {
+        onDragLeave?.()
+        const sourceIndex = source.data.index
+        if (typeof sourceIndex === 'number' && typeof index === 'number') {
+          onReorder?.(sourceIndex, index)
+        }
+      },
+    })
+  }, [index, readonly, onReorder, onDragEnter, onDragLeave])
+
   const rot = mat.getRotation(matrix)
   const rotDeg = rot * RAD2DEG
   const scale = Math.hypot(matrix.xx, matrix.xy)
 
   return (
     <div
-      className={styles.root}
-      draggable
-      onDragStart={onDragStart}
-      onDragEnter={onDragEnter}
+      ref={ref}
+      data-matrix-id={matrixId}
+      className={`${styles.root} ${isDragging ? styles.dragging : ''} ${isAnimating ? styles.animating : ''}`}
     >
       <div className={styles.values}>
         {(Object.keys(matrix) as MatrixElement[]).map((key) => (
