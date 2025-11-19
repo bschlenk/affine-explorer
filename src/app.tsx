@@ -13,7 +13,7 @@ import { createSpring } from './lib/spring'
 
 import styles from './app.module.css'
 
-const spring = createSpring({ stiffness: 170, damping: 26 })
+const spring = createSpring({ stiffness: 300, damping: 30 })
 
 export function App() {
   const values = useMatrices()
@@ -61,98 +61,143 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isAnimating, setIsAnimating] = useState(false)
   const [insertionIndex, setInsertionIndex] = useState<number | null>(null)
+  const [_previewFromIndex, setPreviewFromIndex] = useState<number | null>(null)
   const animationFrameRef = useRef<number | null>(null)
+
+  // Handle drag enter - update canvas preview immediately
+  const handleDragEnter = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
+      setInsertionIndex(toIndex)
+      setPreviewFromIndex(fromIndex)
+      // Immediately dispatch for canvas preview
+      dispatch({ type: 'move', from: fromIndex, to: toIndex })
+    },
+    [dispatch],
+  )
+
+  const handleDragLeave = useCallback(() => {
+    setInsertionIndex(null)
+  }, [])
 
   const handleReorder = useCallback(
     (fromIndex: number, toIndex: number) => {
-      if (fromIndex === toIndex) return
+      if (fromIndex === toIndex) {
+        setPreviewFromIndex(null)
+        setInsertionIndex(null)
+        return
+      }
 
-      // Capture positions before reorder
+      // If we were previewing, the state is already updated
+      // Just animate the UI without dispatching again
       const container = containerRef.current
       if (!container) return
 
       const matrixElements = Array.from(
         container.querySelectorAll('[data-matrix-id]'),
       )
-      const oldPositions = new Map<string, DOMRect>()
-
+      
+      // Capture current positions (already in final state from preview)
+      const currentPositions = new Map<string, DOMRect>()
       matrixElements.forEach((el) => {
         const id = el.getAttribute('data-matrix-id')
         if (id) {
-          oldPositions.set(id, el.getBoundingClientRect())
+          currentPositions.set(id, el.getBoundingClientRect())
         }
       })
 
-      // Perform the reorder
-      dispatch({ type: 'move', from: fromIndex, to: toIndex })
-
-      // Wait for React to update the DOM
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const newMatrixElements = Array.from(
-            container.querySelectorAll('[data-matrix-id]'),
-          )
-
-          setIsAnimating(true)
-
-          // Set up spring animations for each element
-          const springs = new Map<
-            Element,
-            ReturnType<typeof spring<{ x: number; y: number }>>
-          >()
-
-          newMatrixElements.forEach((el) => {
-            const id = el.getAttribute('data-matrix-id')
-            if (!id) return
-
-            const oldPos = oldPositions.get(id)
-            const newPos = el.getBoundingClientRect()
-
-            if (oldPos && newPos) {
-              const deltaX = oldPos.left - newPos.left
-              const deltaY = oldPos.top - newPos.top
-
-              if (deltaX !== 0 || deltaY !== 0) {
-                const s = spring({ x: deltaX, y: deltaY })
-                springs.set(el, s)
-                s.set({ x: 0, y: 0 })
-              }
-            }
-          })
-
-          // Animate using spring physics
-          let lastTime = performance.now()
-          const animate = (currentTime: number) => {
-            const delta = currentTime - lastTime
-            lastTime = currentTime
-
-            let anyActive = false
-
-            springs.forEach((s, el) => {
-              const active = s.update(delta)
-              if (active) {
-                anyActive = true
-                const element = el as HTMLElement
-                element.style.transform = `translate(${s.value.x}px, ${s.value.y}px)`
-              }
-            })
-
-            if (anyActive) {
-              animationFrameRef.current = requestAnimationFrame(animate)
-            } else {
-              // Clean up after animation
-              springs.forEach((_, el) => {
-                const element = el as HTMLElement
-                element.style.transform = ''
-              })
-              setIsAnimating(false)
-              animationFrameRef.current = null
-            }
-          }
-
-          animationFrameRef.current = requestAnimationFrame(animate)
+      // Calculate where elements should have been before the swap
+      const elementWidth = 240 + 8 // matrix width + gap
+      const startPositions = new Map<string, { left: number; top: number }>()
+      
+      matrixElements.forEach((el) => {
+        const id = el.getAttribute('data-matrix-id')
+        if (!id) return
+        
+        const current = currentPositions.get(id)
+        if (!current) return
+        
+        // Determine the visual offset based on the swap
+        let offset = 0
+        const currentIndex = Array.from(matrixElements).indexOf(el)
+        
+        if (currentIndex === toIndex) {
+          // This element moved TO the target position
+          offset = fromIndex < toIndex ? elementWidth : -elementWidth
+        } else if (fromIndex < toIndex && currentIndex > fromIndex && currentIndex <= toIndex) {
+          // Elements between from and to shift left
+          offset = -elementWidth
+        } else if (fromIndex > toIndex && currentIndex >= toIndex && currentIndex < fromIndex) {
+          // Elements between to and from shift right
+          offset = elementWidth
+        }
+        
+        startPositions.set(id, {
+          left: current.left + offset,
+          top: current.top,
         })
       })
+
+      setIsAnimating(true)
+      setPreviewFromIndex(null)
+      setInsertionIndex(null)
+
+      // Set up spring animations for each element
+      const springs = new Map<
+        Element,
+        ReturnType<typeof spring<{ x: number; y: number }>>
+      >()
+
+      matrixElements.forEach((el) => {
+        const id = el.getAttribute('data-matrix-id')
+        if (!id) return
+
+        const startPos = startPositions.get(id)
+        const currentPos = currentPositions.get(id)
+
+        if (startPos && currentPos) {
+          const deltaX = startPos.left - currentPos.left
+          const deltaY = startPos.top - currentPos.top
+
+          if (deltaX !== 0 || deltaY !== 0) {
+            const s = spring({ x: deltaX, y: deltaY })
+            springs.set(el, s)
+            s.set({ x: 0, y: 0 })
+          }
+        }
+      })
+
+      // Animate using spring physics
+      let lastTime = performance.now()
+      const animate = (currentTime: number) => {
+        const delta = currentTime - lastTime
+        lastTime = currentTime
+
+        let anyActive = false
+
+        springs.forEach((s, el) => {
+          const active = s.update(delta)
+          if (active) {
+            anyActive = true
+            const element = el as HTMLElement
+            element.style.transform = `translate(${s.value.x}px, ${s.value.y}px)`
+          }
+        })
+
+        if (anyActive) {
+          animationFrameRef.current = requestAnimationFrame(animate)
+        } else {
+          // Clean up after animation
+          springs.forEach((_, el) => {
+            const element = el as HTMLElement
+            element.style.transform = ''
+          })
+          setIsAnimating(false)
+          animationFrameRef.current = null
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(animate)
     },
     [dispatch],
   )
@@ -194,8 +239,8 @@ function MatrixControls({ matrices, matrix, dispatch }: MatrixControlsProps) {
               dispatch({ type: 'insert', value, after: matrices[i] })
             }}
             onReorder={handleReorder}
-            onDragEnter={() => setInsertionIndex(i)}
-            onDragLeave={() => setInsertionIndex(null)}
+            onDragEnter={(fromIndex) => handleDragEnter(fromIndex, i)}
+            onDragLeave={handleDragLeave}
           />
         ))}
         {insertionIndex !== null && (

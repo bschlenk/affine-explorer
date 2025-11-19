@@ -26,7 +26,7 @@ export interface MatrixProps {
   matrixId?: number
   isAnimating?: boolean
   onReorder?: (fromIndex: number, toIndex: number) => void
-  onDragEnter?: () => void
+  onDragEnter?: (fromIndex: number) => void
   onDragLeave?: () => void
 }
 
@@ -79,7 +79,7 @@ export function Matrix({
       onDragEnter: ({ source }) => {
         const sourceIndex = source.data.index
         if (typeof sourceIndex === 'number' && sourceIndex !== index) {
-          onDragEnter?.()
+          onDragEnter?.(sourceIndex)
         }
       },
       onDragLeave: () => {
